@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from 'phaser';
-import { generateRandomName, getRandomIntVal } from '@/client/utils';
+import { generateRandomName, getRandomIntVal } from '../utils';
 
 export default class MainMenu extends Scene {
   #inputPanel: GameObjects.DOMElement | null = null;

@@ -3,14 +3,6 @@ import Spaceship from './Spaceship';
 import NovaGroup, { type NovaType } from './NovaGroup';
 import ExplosionGroup from './ExplosionGroup';
 import { type BulletType } from './BulletGroup';
-import spaceBg from '@assets/images/space.webp';
-import spaceship from '@assets/images/spaceship.webp';
-import nova from '@assets/images/nova.webp';
-import bullet from '@assets/images/bullet.webp';
-import explosion from '@assets/images/explosion.webp';
-import musicOgg from '@assets/audio/music.ogg';
-import musicWav from '@assets/audio/music.wav';
-import boom from '@assets/audio/boom.wav';
 
 export default class Game extends Scene {
   // Adding '?' to avoid "Property has no initializer" error, as Phaser 3 doesn't allow initializing game objects in the constructor of class extended from Scene
@@ -26,24 +18,27 @@ export default class Game extends Scene {
   }
 
   preload() {
-    this.load.image('space-bg', spaceBg);
-    this.load.image('spaceship', spaceship);
+    this.load.image('space-bg', 'assets/images/space.webp');
+    this.load.image('spaceship', 'assets/images/spaceship.webp');
 
-    this.load.spritesheet('nova', nova, {
+    this.load.spritesheet('nova', 'assets/images/nova.webp', {
       frameWidth: 32,
       frameHeight: 31,
     });
-    this.load.spritesheet('bullet', bullet, {
+    this.load.spritesheet('bullet', 'assets/images/bullet.webp', {
       frameWidth: 15.75,
       frameHeight: 9,
     });
-    this.load.spritesheet('explosion', explosion, {
+    this.load.spritesheet('explosion', 'assets/images/explosion.webp', {
       frameWidth: 29.25,
       frameHeight: 31,
     });
 
-    this.load.audio('music', [musicOgg, musicWav]);
-    this.load.audio('boom', boom);
+    this.load.audio('music', [
+      'assets/audio/music.ogg',
+      'assets/audio/music.wav',
+    ]);
+    this.load.audio('boom', 'assets/audio/boom.wav');
   }
 
   create() {

@@ -1,0 +1,62 @@
+<style>
+  .input-panel {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: #efe3d7;
+    background-color: #292929;
+    font-size: 1.4rem;
+  }
+
+  .name-field {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  #player-name {
+    padding: 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .spaceship-select {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .spaceship {
+    width: 100px;
+    height: 100px;
+  }
+
+  #start-btn {
+    width: 50%;
+    padding: 0.8rem;
+    align-self: center;
+    color: #2c2c2c;
+    background-color: #fef7ce;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+</style>
+
+<div class="input-panel">
+  <div class="name-field">
+    <label for="player-name">Enter your name</label>
+    <input
+      id="player-name"
+      type="text"
+      placeholder="Enter your name"
+      maxlength="14" />
+  </div>
+  <div class="spaceship-select">
+    <p>Select your spaceship</p>
+    <div class="spaceships">
+      <img id="ship1" class="spaceship" src="assets/images/ship1.png" />
+      <img id="ship2" class="spaceship" src="assets/images/ship2.png" />
+      <img id="ship3" class="spaceship" src="assets/images/ship3.png" />
+      <img id="ship4" class="spaceship" src="assets/images/ship4.png" />
+    </div>
+  </div>
+  <button id="start-btn">START</button>
+</div>

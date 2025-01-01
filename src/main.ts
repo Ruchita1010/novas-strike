@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
+import MainMenu from '@scenes/MainMenu';
 import Game from '@scenes/Game';
 
 const config = {
   type: Phaser.AUTO,
+  backgroundColor: '#2e2925',
   scale: {
     parent: 'game-container',
     mode: Phaser.Scale.FIT,
@@ -17,7 +19,10 @@ const config = {
       debug: false,
     },
   },
-  scene: [Game],
+  dom: {
+    createContainer: true,
+  },
+  scene: [MainMenu, Game],
 };
 
 export default new Phaser.Game(config);

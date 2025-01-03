@@ -83,7 +83,7 @@ export default class Game extends Scene {
     }
   }
 
-  update() {
+  override update() {
     if (!this.spaceship || !this.novas) {
       return;
     }

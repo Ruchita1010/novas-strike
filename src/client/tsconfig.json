@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "outDir": "../../dist/client"
+  },
+  "include": ["**/*"],
+  "exclude": ["../server"]
+}

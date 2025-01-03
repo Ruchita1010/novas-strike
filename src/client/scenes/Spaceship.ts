@@ -44,7 +44,9 @@ export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
     };
     const rotation = this.rotation - Math.PI / 2;
     const color = COLORS[this.bulletColorIndex];
-    this.bullets.fireBullet(coords, rotation, color);
+    if (color) {
+      this.bullets.fireBullet(coords, rotation, color);
+    }
   }
 
   override update() {

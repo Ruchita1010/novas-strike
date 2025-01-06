@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import MainMenu from './scenes/MainMenu';
+import Lobby from './scenes/Lobby';
 import Game from './scenes/Game';
 
 const config = {
@@ -22,7 +23,7 @@ const config = {
   dom: {
     createContainer: true,
   },
-  scene: [MainMenu, Game],
+  scene: [MainMenu, Lobby, Game],
 };
 
 export default new Phaser.Game(config);

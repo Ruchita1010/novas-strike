@@ -52,7 +52,6 @@ export default class MainMenu extends Scene {
 
     const spriteKey = this.#selectedSpaceship || `ship${getRandomIntVal(1, 4)}`;
 
-    console.log(name, spriteKey);
-    this.scene.stop('MainMenu');
+    this.scene.start('Lobby', { name, spriteKey });
   }
 }

@@ -9,5 +9,6 @@
     "outDir": "../../dist/client"
   },
   "include": ["**/*"],
-  "exclude": ["../server"]
+  "exclude": ["../server"],
+  "references": [{ "path": "../shared" }]
 }

@@ -41,7 +41,7 @@ class RoomManager {
   getRoom(): Room {
     for (const [, room] of this.#rooms) {
       const remainingTime = room.timer
-        ? Math.floor(room.timer.endTimeMs - Date.now() / 1000)
+        ? Math.floor((room.timer.endTimeMs - Date.now()) / 1000)
         : 0;
       if (room.isAvailable && remainingTime > 3) {
         return room;

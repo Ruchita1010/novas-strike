@@ -16,8 +16,7 @@ type Room = {
   players: Player[];
   isAvailable: boolean;
   availableSlots: number[];
-  timerId: NodeJS.Timeout | null;
-  timerEndTime: number;
+  timer: { id: NodeJS.Timeout; endTimeMs: number } | null;
 };
 
 class RoomManager {
@@ -33,8 +32,7 @@ class RoomManager {
         { length: MAX_PLAYERS_PER_ROOM },
         (_, i) => MAX_PLAYERS_PER_ROOM - 1 - i
       ),
-      timerId: null,
-      timerEndTime: 0,
+      timer: null,
     };
     this.#rooms.set(roomId, room);
     return room;
@@ -42,35 +40,36 @@ class RoomManager {
 
   getRoom(): Room {
     for (const [, room] of this.#rooms) {
-      const remainingTime = Math.floor(room.timerEndTime - Date.now() / 1000);
-      if (room.isAvailable && (room.timerId ?? remainingTime > 3)) {
+      const remainingTime = room.timer
+        ? Math.floor(room.timer.endTimeMs - Date.now() / 1000)
+        : 0;
+      if (room.isAvailable && remainingTime > 3) {
         return room;
       }
     }
     return this.#createRoom();
   }
 
-  setupTimer(room: Room) {
-    room.timerEndTime = Date.now() + WAITING_TIME;
-    room.timerId = setTimeout(() => {
-      room.isAvailable = false;
-      if (room.timerId) {
-        clearTimeout(room.timerId);
-        room.timerId = null;
-      }
-      // emit game start
-    }, WAITING_TIME);
+  #finalizeRoom(room: Room) {
+    room.isAvailable = false;
+    if (room.timer) {
+      clearTimeout(room.timer.id);
+      room.timer = null;
+    }
+    // emit game start event
   }
 
-  handleRoomFull(room: Room) {
+  setupTimer(room: Room) {
+    const endTimeMs = Date.now() + WAITING_TIME;
+    const id = setTimeout(() => {
+      this.#finalizeRoom(room);
+    }, WAITING_TIME);
+    room.timer = { id, endTimeMs };
+  }
+
+  finalizeOnRoomFull(room: Room) {
     if (room.players.length === MAX_PLAYERS_PER_ROOM) {
-      room.isAvailable = false;
-      if (room.timerId) {
-        clearTimeout(room.timerId);
-        room.timerId = null;
-      }
-      // emit game start event
-      return;
+      this.#finalizeRoom(room);
     }
   }
 }

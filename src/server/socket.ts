@@ -31,14 +31,18 @@ export const socketHandler = (
       room.players.push(player);
       socket.join(room.id);
 
-      if (room.players.length === 1 && !room.timerId) {
+      if (room.players.length === 1 && !room.timer) {
         roomManager.setupTimer(room);
       }
 
-      socket.emit('game:currentState', room.players, room.timerEndTime);
+      socket.emit(
+        'game:currentState',
+        room.players,
+        room.timer?.endTimeMs ?? 0
+      );
       socket.to(room.id).emit('player:joined', player);
 
-      roomManager.handleRoomFull(room);
+      roomManager.finalizeOnRoomFull(room);
     });
   });
 };

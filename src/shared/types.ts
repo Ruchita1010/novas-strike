@@ -20,5 +20,6 @@ export type ClientToServerEvents = {
 
 export type ServerToClientEvents = {
   'player:joined': (player: Player) => void;
+  'player:left': (playerId: string) => void;
   'game:currentState': (players: Player[], timerEndTime: number) => void;
 };

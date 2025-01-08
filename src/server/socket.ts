@@ -44,5 +44,21 @@ export const socketHandler = (
 
       roomManager.finalizeOnRoomFull(room);
     });
+
+    socket.on('disconnecting', () => {
+      // exclude the socket's own room (socket is automatically placed in a room with its socket.id)
+      const roomIds = Array.from(socket.rooms).filter(
+        (roomId) => roomId !== socket.id
+      );
+
+      roomIds.forEach((roomId) => {
+        const playersCount = roomManager.removePlayer(roomId, socket.id);
+        socket.to(roomId).emit('player:left', socket.id);
+
+        if (playersCount === 0) {
+          roomManager.deleteRoom(roomId);
+        }
+      });
+    });
   });
 };

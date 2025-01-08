@@ -38,7 +38,7 @@ class RoomManager {
     return room;
   }
 
-  getRoom(): Room {
+  getRoom() {
     for (const [, room] of this.#rooms) {
       const remainingTime = room.timer
         ? Math.floor((room.timer.endTimeMs - Date.now()) / 1000)
@@ -71,6 +71,28 @@ class RoomManager {
     if (room.players.length === MAX_PLAYERS_PER_ROOM) {
       this.#finalizeRoom(room);
     }
+  }
+
+  removePlayer(roomId: string, socketId: string) {
+    const room = this.#rooms.get(roomId);
+    if (!room) {
+      console.error(`Room not found during disconnect`);
+      return -1;
+    }
+
+    room.players = room.players.filter((player) => {
+      if (player.id === socketId) {
+        room.availableSlots.push(player.slot);
+        return false;
+      }
+      return true;
+    });
+
+    return room.players.length;
+  }
+
+  deleteRoom(roomId: string) {
+    this.#rooms.delete(roomId);
   }
 }
 

@@ -56,6 +56,10 @@ export default class Lobby extends Scene {
     this.#socket.on('player:joined', (player) => {
       this.#addPlayer(player);
     });
+
+    this.#socket.on('player:left', (playerId: string) => {
+      this.#removePlayer(playerId);
+    });
   }
 
   #addTimer(endTimeMs: number) {
@@ -90,5 +94,13 @@ export default class Lobby extends Scene {
 
     playerContainer.add([spaceship, playerNameText]);
     this.#playerContainers.set(id, playerContainer);
+  }
+
+  #removePlayer(playerId: string) {
+    const playerContainer = this.#playerContainers.get(playerId);
+    if (playerContainer) {
+      playerContainer.destroy(true);
+      this.#playerContainers.delete(playerId);
+    }
   }
 }

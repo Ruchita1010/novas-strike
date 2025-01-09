@@ -1,15 +1,7 @@
+import type { Player } from '../shared/types.js';
+
 const MAX_PLAYERS_PER_ROOM = 4;
 const WAITING_TIME = 30_000;
-
-type Player = {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  spriteKey: string;
-  slot: number;
-  roomId: string;
-};
 
 type Room = {
   id: string;

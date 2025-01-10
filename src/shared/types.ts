@@ -4,7 +4,7 @@ export type Player = {
   x: number;
   y: number;
   spriteKey: string;
-  slot: number;
+  slot?: number;
   roomId: string;
 };
 
@@ -22,4 +22,5 @@ export type ServerToClientEvents = {
   'player:joined': (player: Player) => void;
   'player:left': (playerId: string) => void;
   'game:currentState': (players: Player[], timerEndTime: number) => void;
+  'game:start': (players: Player[]) => void;
 };

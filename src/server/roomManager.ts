@@ -48,20 +48,21 @@ class RoomManager {
       clearTimeout(room.timer.id);
       room.timer = null;
     }
-    // emit game start event
   }
 
-  setupTimer(room: Room) {
+  setupTimer(room: Room, onTimerEnd: () => void) {
     const endTimeMs = Date.now() + WAITING_TIME;
     const id = setTimeout(() => {
       this.#finalizeRoom(room);
+      onTimerEnd();
     }, WAITING_TIME);
     room.timer = { id, endTimeMs };
   }
 
-  finalizeOnRoomFull(room: Room) {
+  finalizeOnRoomFull(room: Room, onRoomFull: () => void) {
     if (room.players.length === MAX_PLAYERS_PER_ROOM) {
       this.#finalizeRoom(room);
+      onRoomFull();
     }
   }
 
@@ -74,7 +75,9 @@ class RoomManager {
 
     room.players = room.players.filter((player) => {
       if (player.id === socketId) {
-        room.availableSlots.push(player.slot);
+        if (player.slot !== undefined) {
+          room.availableSlots.push(player.slot);
+        }
         return false;
       }
       return true;

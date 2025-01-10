@@ -60,6 +60,10 @@ export default class Lobby extends Scene {
     this.#socket.on('player:left', (playerId: string) => {
       this.#removePlayer(playerId);
     });
+
+    this.#socket.on('game:start', (players: Player[]) => {
+      this.scene.start('Game', { socket: this.#socket, players });
+    });
   }
 
   #addTimer(endTimeMs: number) {

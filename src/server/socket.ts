@@ -32,7 +32,9 @@ export const socketHandler = (
       socket.join(room.id);
 
       if (room.players.length === 1 && !room.timer) {
-        roomManager.setupTimer(room);
+        roomManager.setupTimer(room, () => {
+          io.to(room.id).emit('game:start', room.players);
+        });
       }
 
       socket.emit(
@@ -42,7 +44,9 @@ export const socketHandler = (
       );
       socket.to(room.id).emit('player:joined', player);
 
-      roomManager.finalizeOnRoomFull(room);
+      roomManager.finalizeOnRoomFull(room, () => {
+        io.to(room.id).emit('game:start', room.players);
+      });
     });
 
     socket.on('disconnecting', () => {

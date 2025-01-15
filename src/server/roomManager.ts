@@ -86,6 +86,14 @@ class RoomManager {
     return room.players.length;
   }
 
+  getRoomById(id: string) {
+    return this.#rooms.get(id);
+  }
+
+  getAllRooms() {
+    return this.#rooms;
+  }
+
   deleteRoom(roomId: string) {
     this.#rooms.delete(roomId);
   }

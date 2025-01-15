@@ -5,6 +5,8 @@ import type {
   ServerToClientEvents,
 } from '../shared/types.js';
 
+const SPEED = 3;
+
 export const socketHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>
 ) => {
@@ -21,10 +23,10 @@ export const socketHandler = (
       const y = gameHeight - 200;
       const player = {
         id: socket.id,
-        roomId: room.id,
         x,
         y,
         slot,
+        seqNumber: 0,
         ...playerInput,
       };
 
@@ -33,7 +35,8 @@ export const socketHandler = (
 
       if (room.players.length === 1 && !room.timer) {
         roomManager.setupTimer(room, () => {
-          io.to(room.id).emit('game:start', room.players);
+          io.to(room.id).emit('game:start', room.id, room.players);
+          gameLoop(io);
         });
       }
 
@@ -45,8 +48,39 @@ export const socketHandler = (
       socket.to(room.id).emit('player:joined', player);
 
       roomManager.finalizeOnRoomFull(room, () => {
-        io.to(room.id).emit('game:start', room.players);
+        io.to(room.id).emit('game:start', room.id, room.players);
+        gameLoop(io);
       });
+    });
+
+    socket.on('player:move', ({ roomId, direction, seqNumber }) => {
+      const room = roomManager.getRoomById(roomId);
+      if (!room) {
+        console.error('Room with the given id not found');
+        return;
+      }
+
+      const player = room.players.find((player) => player.id === socket.id);
+      if (!player) {
+        console.error('Player not found');
+        return;
+      }
+
+      player.seqNumber = seqNumber;
+      switch (direction) {
+        case 'left':
+          player.x -= SPEED;
+          break;
+        case 'right':
+          player.x += SPEED;
+          break;
+        case 'up':
+          player.y -= SPEED;
+          break;
+        case 'down':
+          player.y += SPEED;
+          break;
+      }
     });
 
     socket.on('disconnecting', () => {
@@ -65,4 +99,15 @@ export const socketHandler = (
       });
     });
   });
+};
+
+const gameLoop = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
+  setInterval(() => {
+    const rooms = roomManager.getAllRooms();
+    rooms.forEach((room) => {
+      if (room.isAvailable === false) {
+        io.to(room.id).emit('players:update', room.players);
+      }
+    });
+  }, 30);
 };

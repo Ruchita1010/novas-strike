@@ -61,8 +61,8 @@ export default class Lobby extends Scene {
       this.#removePlayer(playerId);
     });
 
-    this.#socket.on('game:start', (players: Player[]) => {
-      this.scene.start('Game', { socket: this.#socket, players });
+    this.#socket.on('game:start', (roomId: string, players: Player[]) => {
+      this.scene.start('Game', { socket: this.#socket, roomId, players });
     });
   }
 

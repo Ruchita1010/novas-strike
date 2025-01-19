@@ -83,6 +83,23 @@ export const socketHandler = (
       }
     });
 
+    socket.on('player:fire', (roomId: string, x: number, y: number) => {
+      const room = roomManager.getRoomById(roomId);
+      if (!room) {
+        console.error('Room with the given id not found');
+        return;
+      }
+
+      const { bulletCounter, bullets } = room;
+      bullets.set(bulletCounter, {
+        x,
+        y,
+        playerId: socket.id,
+      });
+
+      room.bulletCounter++;
+    });
+
     socket.on('disconnecting', () => {
       // exclude the socket's own room (socket is automatically placed in a room with its socket.id)
       const roomIds = Array.from(socket.rooms).filter(
@@ -104,9 +121,21 @@ export const socketHandler = (
 const gameLoop = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
   setInterval(() => {
     const rooms = roomManager.getAllRooms();
+
     rooms.forEach((room) => {
-      if (room.isAvailable === false) {
-        io.to(room.id).emit('players:update', room.players);
+      const { id, isAvailable, bullets } = room;
+
+      if (!isAvailable) {
+        io.to(id).emit('players:update', room.players);
+
+        for (const [id, bullet] of bullets) {
+          bullet.y -= 5;
+          if (bullet.y <= 0) {
+            bullets.delete(id);
+          }
+        }
+
+        io.to(id).emit('bullets:update', Array.from(bullets));
       }
     });
   }, 30);

@@ -1,4 +1,4 @@
-import type { Player } from '../shared/types.js';
+import type { Bullet, Player } from '../shared/types.js';
 
 const MAX_PLAYERS_PER_ROOM = 4;
 const WAITING_TIME = 30_000;
@@ -6,6 +6,8 @@ const WAITING_TIME = 30_000;
 type Room = {
   id: string;
   players: Player[];
+  bulletCounter: number;
+  bullets: Map<number, Bullet>;
   isAvailable: boolean;
   availableSlots: number[];
   timer: { id: NodeJS.Timeout; endTimeMs: number } | null;
@@ -16,9 +18,11 @@ class RoomManager {
 
   #createRoom() {
     const roomId = `room_${Date.now()}`;
-    const room = {
+    const room: Room = {
       id: roomId,
       players: [],
+      bulletCounter: 0,
+      bullets: new Map(),
       isAvailable: true,
       availableSlots: Array.from(
         { length: MAX_PLAYERS_PER_ROOM },

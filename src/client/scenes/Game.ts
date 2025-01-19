@@ -1,6 +1,8 @@
 import type { Socket } from 'socket.io-client';
 import Player from '../entities/Player';
+import type { Bullet } from './BulletGroup';
 import type {
+  Bullet as BulletType,
   ClientToServerEvents,
   Direction,
   Player as PlayerType,
@@ -24,6 +26,7 @@ export default class Game extends Phaser.Scene {
   #otherPlayers: Map<string, Player> = new Map();
   #inputs: Input[] = [];
   #seqNumber = 0;
+  #bullets: Map<number, Bullet> = new Map();
 
   constructor() {
     super('Game');
@@ -34,7 +37,9 @@ export default class Game extends Phaser.Scene {
     this.#roomId = roomId;
   }
 
-  preload() {}
+  preload() {
+    this.load.image('bullet', 'assets/images/bullet.png');
+  }
 
   create({ players }: SceneInitData) {
     players.forEach((player) => {
@@ -55,6 +60,24 @@ export default class Game extends Phaser.Scene {
         }
       });
     });
+
+    this.#socket?.on(
+      'bullets:update',
+      (bulletsData: [number, BulletType][]) => {
+        const serverBullets = new Map(bulletsData);
+
+        for (const [id, serverBullet] of serverBullets) {
+          const bullet = this.#bullets.get(id);
+          if (!bullet) {
+            this.#createBullet(id, serverBullet);
+          } else {
+            bullet.setY(serverBullet.y);
+          }
+        }
+
+        this.#cleanupStaleBullets(serverBullets);
+      }
+    );
   }
 
   override update() {
@@ -69,6 +92,15 @@ export default class Game extends Phaser.Scene {
     if (input.right) this.#processMovement('right', SPEED, 0);
     if (input.up) this.#processMovement('up', 0, -SPEED);
     if (input.down) this.#processMovement('down', 0, SPEED);
+
+    if (input.fire) this.#fire();
+  }
+
+  #fire() {
+    if (!this.#player || !this.#roomId) return;
+
+    const { x, y, displayHeight } = this.#player;
+    this.#socket?.emit('player:fire', this.#roomId, x, y - displayHeight * 0.5);
   }
 
   #processMovement = (direction: Direction, dx: number, dy: number) => {
@@ -105,6 +137,30 @@ export default class Game extends Phaser.Scene {
     const otherPlayer = this.#otherPlayers.get(id);
     if (otherPlayer) {
       otherPlayer.setTargetPosition(x, y);
+    }
+  }
+
+  #createBullet(bulletId: number, bulletData: BulletType) {
+    const { x, y, playerId } = bulletData;
+    const player =
+      playerId === this.#socket?.id
+        ? this.#player
+        : this.#otherPlayers.get(playerId);
+
+    if (!player) return;
+
+    const newBullet = player.fireBullet(x, y);
+    if (newBullet) {
+      this.#bullets.set(bulletId, newBullet);
+    }
+  }
+
+  #cleanupStaleBullets(serverBullets: Map<number, BulletType>) {
+    for (const [id, bullet] of this.#bullets) {
+      if (!serverBullets.has(id)) {
+        bullet.deactivate();
+        this.#bullets.delete(id);
+      }
     }
   }
 }

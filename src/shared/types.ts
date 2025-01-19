@@ -12,6 +12,12 @@ export type PlayerSelection = Pick<Player, 'name' | 'spriteKey'>;
 
 export type Direction = 'left' | 'right' | 'up' | 'down';
 
+export type Bullet = {
+  x: number;
+  y: number;
+  playerId: string;
+};
+
 export type ClientToServerEvents = {
   'player:join': (
     playerSelection: PlayerSelection,
@@ -23,6 +29,7 @@ export type ClientToServerEvents = {
     direction: Direction;
     seqNumber: number;
   }) => void;
+  'player:fire': (roomId: string, x: number, y: number) => void;
 };
 
 export type ServerToClientEvents = {
@@ -31,4 +38,5 @@ export type ServerToClientEvents = {
   'players:update': (players: Player[]) => void;
   'game:currentState': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
+  'bullets:update': (bullets: [number, Bullet][]) => void;
 };

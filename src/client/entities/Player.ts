@@ -1,3 +1,4 @@
+import BulletGroup from '../scenes/BulletGroup';
 import type { Player as PlayerType } from '../../shared/types';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
@@ -7,6 +8,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   #targetY;
   #cursors;
   #keys;
+  #lastFiredTime = 0;
+  readonly #coolDown = 250;
+  #bulletGroup: BulletGroup;
 
   constructor(scene: Phaser.Scene, playerData: PlayerType) {
     const { id, name, x, y, spriteKey } = playerData;
@@ -19,6 +23,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.#targetX = x;
     this.#targetY = y;
     this.#nameText = scene.add.text(x, y + 45, name).setOrigin(0.5);
+    this.#bulletGroup = new BulletGroup(scene);
     if (scene.input.keyboard) {
       this.#cursors = scene.input.keyboard.createCursorKeys();
       this.#keys = {
@@ -35,12 +40,30 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       return { left: false, right: false, up: false, down: false };
     }
 
+    const currentTime = this.scene.time.now;
+    const canFire =
+      this.#cursors.space.isDown &&
+      currentTime - this.#lastFiredTime > this.#coolDown;
+
+    if (canFire) {
+      this.#lastFiredTime = currentTime;
+    }
+
     return {
       left: this.#cursors.left.isDown || this.#keys.left.isDown,
       right: this.#cursors.right.isDown || this.#keys.right.isDown,
       up: this.#cursors.up.isDown || this.#keys.up.isDown,
       down: this.#cursors.down.isDown || this.#keys.down.isDown,
+      fire: canFire,
     };
+  }
+
+  fireBullet(x: number, y: number) {
+    const bullet = this.#bulletGroup.getBullet();
+    if (bullet) {
+      bullet.activate(x, y, 0x5ffb1c);
+    }
+    return bullet;
   }
 
   setTargetPosition(x: number, y: number) {

@@ -31,6 +31,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         down: scene.input.keyboard.addKey('S'),
         left: scene.input.keyboard.addKey('A'),
         right: scene.input.keyboard.addKey('D'),
+        keyC: scene.input.keyboard.addKey('C'),
       };
     }
   }
@@ -55,13 +56,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       up: this.#cursors.up.isDown || this.#keys.up.isDown,
       down: this.#cursors.down.isDown || this.#keys.down.isDown,
       fire: canFire,
+      color: Phaser.Input.Keyboard.JustDown(this.#keys.keyC),
     };
   }
 
-  fireBullet(x: number, y: number) {
+  fireBullet(x: number, y: number, color: number) {
     const bullet = this.#bulletGroup.getBullet();
     if (bullet) {
-      bullet.activate(x, y, 0x5ffb1c);
+      bullet.activate(x, y, color);
     }
     return bullet;
   }

@@ -6,6 +6,7 @@ import type {
 } from '../shared/types.js';
 
 const SPEED = 3;
+const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
 
 export const socketHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>
@@ -21,11 +22,13 @@ export const socketHandler = (
       }
       const x = gameWidth / 2 - 300 + slot * 200;
       const y = gameHeight - 200;
+      const colorIdx = Math.floor(Math.random() * COLORS.length);
       const player = {
         id: socket.id,
         x,
         y,
         slot,
+        colorIdx,
         seqNumber: 0,
         ...playerInput,
       };
@@ -90,14 +93,37 @@ export const socketHandler = (
         return;
       }
 
+      const player = room.players.find((player) => player.id === socket.id);
+      if (!player) {
+        console.error('Player not found');
+        return;
+      }
+
       const { bulletCounter, bullets } = room;
       bullets.set(bulletCounter, {
         x,
         y,
+        colorIdx: player.colorIdx,
         playerId: socket.id,
       });
 
       room.bulletCounter++;
+    });
+
+    socket.on('player:colorChange', (roomId: string) => {
+      const room = roomManager.getRoomById(roomId);
+      if (!room) {
+        console.error('Room with the given id not found');
+        return;
+      }
+
+      const player = room.players.find((player) => player.id === socket.id);
+      if (!player) {
+        console.error('Player not found');
+        return;
+      }
+
+      player.colorIdx = (player.colorIdx + 1) % COLORS.length;
     });
 
     socket.on('disconnecting', () => {

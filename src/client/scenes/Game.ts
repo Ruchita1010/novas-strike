@@ -18,6 +18,7 @@ type SceneInitData = {
 type Input = { seqNumber: number; dx: number; dy: number };
 
 const SPEED = 3;
+const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
 
 export default class Game extends Phaser.Scene {
   #socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -52,11 +53,11 @@ export default class Game extends Phaser.Scene {
     });
 
     this.#socket?.on('players:update', (players) => {
-      players.forEach(({ id, x, y, seqNumber }) => {
+      players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
         if (id === this.#socket?.id) {
-          this.#updatePlayerPosition(x, y, seqNumber);
+          this.#updatePlayerPosition(x, y, colorIdx, seqNumber);
         } else {
-          this.#updateOtherPlayerPosition(id, x, y);
+          this.#updateOtherPlayerPosition(id, x, y, colorIdx);
         }
       });
     });
@@ -94,6 +95,13 @@ export default class Game extends Phaser.Scene {
     if (input.down) this.#processMovement('down', 0, SPEED);
 
     if (input.fire) this.#fire();
+
+    if (input.color) this.#changeColor();
+  }
+
+  #changeColor() {
+    if (!this.#roomId) return;
+    this.#socket?.emit('player:colorChange', this.#roomId);
   }
 
   #fire() {
@@ -118,10 +126,16 @@ export default class Game extends Phaser.Scene {
     });
   };
 
-  #updatePlayerPosition(x: number, y: number, seqNumber: number) {
+  #updatePlayerPosition(
+    x: number,
+    y: number,
+    colorIdx: number,
+    seqNumber: number
+  ) {
     if (!this.#player) return;
 
     this.#player.setTargetPosition(x, y);
+    this.#player.setTint(COLORS[colorIdx]);
 
     const lastAckedIndex = this.#inputs.findIndex(
       (input) => input.seqNumber === seqNumber
@@ -133,23 +147,31 @@ export default class Game extends Phaser.Scene {
     this.#inputs.forEach(({ dx, dy }) => this.#player?.move(dx, dy));
   }
 
-  #updateOtherPlayerPosition(id: string, x: number, y: number) {
+  #updateOtherPlayerPosition(
+    id: string,
+    x: number,
+    y: number,
+    colorIdx: number
+  ) {
     const otherPlayer = this.#otherPlayers.get(id);
     if (otherPlayer) {
       otherPlayer.setTargetPosition(x, y);
+      otherPlayer.setTint(COLORS[colorIdx]);
     }
   }
 
   #createBullet(bulletId: number, bulletData: BulletType) {
-    const { x, y, playerId } = bulletData;
+    const { x, y, colorIdx, playerId } = bulletData;
     const player =
       playerId === this.#socket?.id
         ? this.#player
         : this.#otherPlayers.get(playerId);
 
-    if (!player) return;
+    const color = COLORS[colorIdx];
 
-    const newBullet = player.fireBullet(x, y);
+    if (!player || !color) return;
+
+    const newBullet = player.fireBullet(x, y, color);
     if (newBullet) {
       this.#bullets.set(bulletId, newBullet);
     }

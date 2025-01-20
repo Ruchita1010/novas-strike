@@ -5,6 +5,7 @@ export type Player = {
   y: number;
   spriteKey: string;
   slot: number;
+  colorIdx: number;
   seqNumber: number;
 };
 
@@ -15,6 +16,7 @@ export type Direction = 'left' | 'right' | 'up' | 'down';
 export type Bullet = {
   x: number;
   y: number;
+  colorIdx: number;
   playerId: string;
 };
 
@@ -30,6 +32,7 @@ export type ClientToServerEvents = {
     seqNumber: number;
   }) => void;
   'player:fire': (roomId: string, x: number, y: number) => void;
+  'player:colorChange': (roomId: string) => void;
 };
 
 export type ServerToClientEvents = {

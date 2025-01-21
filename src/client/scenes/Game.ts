@@ -1,10 +1,13 @@
 import type { Socket } from 'socket.io-client';
 import Player from '../entities/Player';
+import NovaGroup from './NovaGroup';
+import type { Nova } from './NovaGroup';
 import type { Bullet } from './BulletGroup';
 import type {
   Bullet as BulletType,
   ClientToServerEvents,
   Direction,
+  Nova as NovaType,
   Player as PlayerType,
   ServerToClientEvents,
 } from '../../shared/types';
@@ -28,6 +31,8 @@ export default class Game extends Phaser.Scene {
   #inputs: Input[] = [];
   #seqNumber = 0;
   #bullets: Map<number, Bullet> = new Map();
+  #novas: Map<number, Nova> = new Map();
+  #novaGroup?: NovaGroup;
 
   constructor() {
     super('Game');
@@ -40,9 +45,12 @@ export default class Game extends Phaser.Scene {
 
   preload() {
     this.load.image('bullet', 'assets/images/bullet.png');
+    this.load.image('nova', 'assets/images/nova.png');
   }
 
   create({ players }: SceneInitData) {
+    this.#novaGroup = new NovaGroup(this);
+
     players.forEach((player) => {
       const playerObj = new Player(this, player);
       if (player.id === this.#socket?.id) {
@@ -79,6 +87,30 @@ export default class Game extends Phaser.Scene {
         this.#cleanupStaleBullets(serverBullets);
       }
     );
+
+    this.#socket?.on('novas:update', (novasData: [number, NovaType][]) => {
+      const serverNovas = new Map(novasData);
+
+      for (const [id, serverNova] of serverNovas) {
+        const nova = this.#novas.get(id);
+        if (!nova) {
+          const newNova = this.#novaGroup?.getFirstDead(false) as Nova | null;
+          if (newNova) {
+            this.#novas.set(id, newNova);
+            newNova.spawn(serverNova.x, serverNova.y, serverNova.colorIdx);
+          }
+        } else {
+          nova.setY(serverNova.y);
+        }
+      }
+
+      for (const [id, nova] of this.#novas) {
+        if (!serverNovas.has(id)) {
+          nova.deactivate();
+          this.#novas.delete(id);
+        }
+      }
+    });
   }
 
   override update() {

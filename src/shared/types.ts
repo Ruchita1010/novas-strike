@@ -20,6 +20,12 @@ export type Bullet = {
   playerId: string;
 };
 
+export type Nova = {
+  x: number;
+  y: number;
+  colorIdx: number;
+};
+
 export type ClientToServerEvents = {
   'player:join': (
     playerSelection: PlayerSelection,
@@ -42,4 +48,5 @@ export type ServerToClientEvents = {
   'game:currentState': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
   'bullets:update': (bullets: [number, Bullet][]) => void;
+  'novas:update': (novas: [number, Nova][]) => void;
 };

@@ -1,4 +1,5 @@
-import type { Bullet, Player } from '../shared/types.js';
+import { ObjectPool } from './ObjectPool.js';
+import type { Bullet, Nova, Player } from '../shared/types.js';
 
 const MAX_PLAYERS_PER_ROOM = 4;
 const WAITING_TIME = 30_000;
@@ -6,6 +7,9 @@ const WAITING_TIME = 30_000;
 type Room = {
   id: string;
   players: Player[];
+  novaCounter: number;
+  novaPool: ObjectPool<Nova>;
+  novas: Map<number, Nova>;
   bulletCounter: number;
   bullets: Map<number, Bullet>;
   isAvailable: boolean;
@@ -21,6 +25,9 @@ class RoomManager {
     const room: Room = {
       id: roomId,
       players: [],
+      novaCounter: 0,
+      novas: new Map(),
+      novaPool: new ObjectPool(() => ({ x: 0, y: 0, colorIdx: 0 }), 30),
       bulletCounter: 0,
       bullets: new Map(),
       isAvailable: true,

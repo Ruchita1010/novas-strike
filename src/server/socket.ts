@@ -1,7 +1,9 @@
 import type { Server } from 'socket.io';
 import { roomManager } from './roomManager.js';
+import type { ObjectPool } from './ObjectPool.js';
 import type {
   ClientToServerEvents,
+  Nova,
   ServerToClientEvents,
 } from '../shared/types.js';
 
@@ -149,7 +151,7 @@ const gameLoop = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
     const rooms = roomManager.getAllRooms();
 
     rooms.forEach((room) => {
-      const { id, isAvailable, bullets } = room;
+      const { id, isAvailable, bullets, novas } = room;
 
       if (!isAvailable) {
         io.to(id).emit('players:update', room.players);
@@ -162,7 +164,49 @@ const gameLoop = (io: Server<ClientToServerEvents, ServerToClientEvents>) => {
         }
 
         io.to(id).emit('bullets:update', Array.from(bullets));
+
+        if (novas.size === 0) {
+          room.novaCounter = spawnNovaWave(
+            room.novaPool,
+            novas,
+            room.novaCounter
+          );
+        } else {
+          for (const [id, nova] of novas) {
+            nova.y += 1;
+            if (nova.y > 700) {
+              room.novaPool.release(nova);
+              novas.delete(id);
+            }
+          }
+        }
+
+        io.to(id).emit('novas:update', Array.from(novas));
       }
     });
   }, 30);
 };
+
+function getRandomBetween(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function spawnNovaWave(
+  novaPool: ObjectPool<Nova>,
+  novas: Map<number, Nova>,
+  novaCounter: number
+) {
+  const waveSize = getRandomBetween(15, 20);
+
+  for (let i = 0; i < waveSize; i++) {
+    const nova = novaPool.acquire();
+    if (!nova) continue;
+
+    nova.x = getRandomBetween(10, 1216 - 10);
+    nova.y = getRandomBetween(-100, -10);
+    nova.colorIdx = getRandomBetween(0, COLORS.length - 1);
+
+    novas.set(novaCounter++, nova);
+  }
+  return novaCounter;
+}

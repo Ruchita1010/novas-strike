@@ -9,42 +9,15 @@ export default class NovaGroup extends Phaser.Physics.Arcade.Group {
       visible: false,
     });
   }
-
-  spawnWave() {
-    const waveSize = Phaser.Math.Between(15, 20);
-    for (let i = 0; i < waveSize; i++) {
-      const nova = this.getFirstDead(false);
-      if (nova) {
-        const x = Phaser.Math.Between(10, this.scene.scale.width - 10);
-        const y = Phaser.Math.Between(-100, -10);
-        nova.spawn(x, y);
-      }
-    }
-  }
-
-  update() {
-    if (this.countActive(true) < 10) {
-      this.spawnWave();
-    }
-
-    this.getChildren().forEach((child) => {
-      const nova = child as Nova;
-      if (nova.active && nova.y >= this.scene.sys.canvas.height) {
-        nova.deactivate();
-      }
-    });
-  }
 }
 
 const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
-class Nova extends Phaser.Physics.Arcade.Sprite {
-  color;
+export class Nova extends Phaser.Physics.Arcade.Sprite {
+  color = 0xffffff;
   constructor(scene: Phaser.Scene, x: number, y: number, key: string) {
     super(scene, x, y, key);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(1.5);
-    this.color = Phaser.Utils.Array.GetRandom(COLORS);
     this.scene.time.addEvent({
       delay: Phaser.Math.Between(2000, 5000), // Random delay before first color display
       callback: this.displayColor,
@@ -53,11 +26,13 @@ class Nova extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  spawn(x: number, y: number) {
+  spawn(x: number, y: number, colorIdx: number) {
     this.enableBody(true, x, y, true, true);
-    this.setAccelerationY(2);
     this.anims.play('spawn');
-    this.displayColor();
+    const color = COLORS[colorIdx];
+    if (color) {
+      this.color = color;
+    }
   }
 
   displayColor() {
@@ -71,5 +46,3 @@ class Nova extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(true, true);
   }
 }
-
-export type NovaType = Nova;

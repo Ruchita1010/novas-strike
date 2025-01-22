@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import MainMenu from './scenes/MainMenu';
 import Lobby from './scenes/Lobby';
 import Game from './scenes/Game';
+import { GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -10,8 +11,8 @@ const config = {
     parent: 'game-container',
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: window.innerWidth / 1.2,
-    height: window.innerHeight,
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
   },
   physics: {
     default: 'arcade',

@@ -6,15 +6,18 @@ import type {
   Nova,
   ServerToClientEvents,
 } from '../shared/types.js';
-
-const SPEED = 3;
-const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
+import {
+  COLORS,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  PLAYER_SPEED,
+} from '../shared/constants.js';
 
 export const socketHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>
 ) => {
   io.on('connection', (socket) => {
-    socket.on('player:join', (playerInput, gameWidth, gameHeight) => {
+    socket.on('player:join', (playerInput) => {
       const room = roomManager.getRoom();
 
       const slot = room.availableSlots.pop();
@@ -22,8 +25,8 @@ export const socketHandler = (
         console.error('No available slots in the room');
         return;
       }
-      const x = gameWidth / 2 - 300 + slot * 200;
-      const y = gameHeight - 200;
+      const x = GAME_WIDTH / 2 - 300 + slot * 200;
+      const y = GAME_HEIGHT - 200;
       const colorIdx = Math.floor(Math.random() * COLORS.length);
       const player = {
         id: socket.id,
@@ -74,16 +77,16 @@ export const socketHandler = (
       player.seqNumber = seqNumber;
       switch (direction) {
         case 'left':
-          player.x -= SPEED;
+          player.x -= PLAYER_SPEED;
           break;
         case 'right':
-          player.x += SPEED;
+          player.x += PLAYER_SPEED;
           break;
         case 'up':
-          player.y -= SPEED;
+          player.y -= PLAYER_SPEED;
           break;
         case 'down':
-          player.y += SPEED;
+          player.y += PLAYER_SPEED;
           break;
       }
     });
@@ -202,7 +205,7 @@ function spawnNovaWave(
     const nova = novaPool.acquire();
     if (!nova) continue;
 
-    nova.x = getRandomBetween(10, 1216 - 10);
+    nova.x = getRandomBetween(10, GAME_WIDTH - 10);
     nova.y = getRandomBetween(-100, -10);
     nova.colorIdx = getRandomBetween(0, COLORS.length - 1);
 

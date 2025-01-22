@@ -11,6 +11,7 @@ import type {
   Player as PlayerType,
   ServerToClientEvents,
 } from '../../shared/types';
+import { COLORS, PLAYER_SPEED } from '../../shared/constants';
 
 type SceneInitData = {
   socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -19,9 +20,6 @@ type SceneInitData = {
 };
 
 type Input = { seqNumber: number; dx: number; dy: number };
-
-const SPEED = 3;
-const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
 
 export default class Game extends Phaser.Scene {
   #socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -121,10 +119,10 @@ export default class Game extends Phaser.Scene {
 
     const input = this.#player.getInput();
 
-    if (input.left) this.#processMovement('left', -SPEED, 0);
-    if (input.right) this.#processMovement('right', SPEED, 0);
-    if (input.up) this.#processMovement('up', 0, -SPEED);
-    if (input.down) this.#processMovement('down', 0, SPEED);
+    if (input.left) this.#processMovement('left', -PLAYER_SPEED, 0);
+    if (input.right) this.#processMovement('right', PLAYER_SPEED, 0);
+    if (input.up) this.#processMovement('up', 0, -PLAYER_SPEED);
+    if (input.down) this.#processMovement('down', 0, PLAYER_SPEED);
 
     if (input.fire) this.#fire();
 

@@ -3,7 +3,7 @@ import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from 'socket.io';
-import { socketHandler } from './socket.js';
+import { Game } from './game.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -21,7 +21,8 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client/index.html'));
 });
 
-socketHandler(io);
+const game = new Game(io);
+game.startLoops();
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

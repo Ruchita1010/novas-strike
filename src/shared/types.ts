@@ -26,17 +26,31 @@ export type Nova = {
   colorIdx: number;
 };
 
+type PlayerDelta = {
+  id: string;
+  x: number;
+  y: number;
+  colorIdx: number;
+  seqNumber: number;
+};
+
+export type GameState = {
+  players: PlayerDelta[];
+  bullets: [number, Bullet][];
+  novas: [number, Nova][];
+};
+
 export type ClientToServerEvents = {
   'player:join': (
     playerSelection: PlayerSelection,
     gameWidth: number,
     gameHeight: number
   ) => void;
-  'player:move': (MovementPayload: {
-    roomId: string;
-    direction: Direction;
-    seqNumber: number;
-  }) => void;
+  'player:move': (
+    roomId: string,
+    direction: Direction,
+    seqNumber: number
+  ) => void;
   'player:fire': (roomId: string, x: number, y: number) => void;
   'player:colorChange': (roomId: string) => void;
 };
@@ -44,9 +58,7 @@ export type ClientToServerEvents = {
 export type ServerToClientEvents = {
   'player:joined': (player: Player) => void;
   'player:left': (playerId: string) => void;
-  'players:update': (players: Player[]) => void;
   'game:currentState': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
-  'bullets:update': (bullets: [number, Bullet][]) => void;
-  'novas:update': (novas: [number, Nova][]) => void;
+  'game:state': (gameState: GameState) => void;
 };

@@ -11,7 +11,6 @@ export default class NovaGroup extends Phaser.Physics.Arcade.Group {
   }
 }
 
-const COLORS = [0x2384ff, 0x5ffb1c, 0xff2727, 0xffe633];
 export class Nova extends Phaser.Physics.Arcade.Sprite {
   color = 0xffffff;
   constructor(scene: Phaser.Scene, x: number, y: number, key: string) {
@@ -26,13 +25,10 @@ export class Nova extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  spawn(x: number, y: number, colorIdx: number) {
+  activate(x: number, y: number, color: number) {
     this.enableBody(true, x, y, true, true);
     this.anims.play('spawn');
-    const color = COLORS[colorIdx];
-    if (color) {
-      this.color = color;
-    }
+    this.color = color;
   }
 
   displayColor() {

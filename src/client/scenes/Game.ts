@@ -7,6 +7,7 @@ import type {
   Bullet as BulletType,
   ClientToServerEvents,
   Direction,
+  GameState,
   Nova as NovaType,
   Player as PlayerType,
   ServerToClientEvents,
@@ -58,60 +59,21 @@ export default class Game extends Phaser.Scene {
       }
     });
 
-    this.#socket?.on('players:update', (players) => {
-      players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
+    this.#socket?.on('game:state', (gameState: GameState) => {
+      gameState.players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
         if (id === this.#socket?.id) {
           this.#updatePlayerPosition(x, y, colorIdx, seqNumber);
         } else {
           this.#updateOtherPlayerPosition(id, x, y, colorIdx);
         }
       });
-    });
 
-    this.#socket?.on(
-      'bullets:update',
-      (bulletsData: [number, BulletType][]) => {
-        const serverBullets = new Map(bulletsData);
-
-        for (const [id, serverBullet] of serverBullets) {
-          const bullet = this.#bullets.get(id);
-          if (!bullet) {
-            this.#createBullet(id, serverBullet);
-          } else {
-            bullet.setY(serverBullet.y);
-          }
-        }
-
-        this.#cleanupStaleBullets(serverBullets);
-      }
-    );
-
-    this.#socket?.on('novas:update', (novasData: [number, NovaType][]) => {
-      const serverNovas = new Map(novasData);
-
-      for (const [id, serverNova] of serverNovas) {
-        const nova = this.#novas.get(id);
-        if (!nova) {
-          const newNova = this.#novaGroup?.getFirstDead(false) as Nova | null;
-          if (newNova) {
-            this.#novas.set(id, newNova);
-            newNova.spawn(serverNova.x, serverNova.y, serverNova.colorIdx);
-          }
-        } else {
-          nova.setY(serverNova.y);
-        }
-      }
-
-      for (const [id, nova] of this.#novas) {
-        if (!serverNovas.has(id)) {
-          nova.deactivate();
-          this.#novas.delete(id);
-        }
-      }
+      this.#updateBullets(gameState.bullets);
+      this.#updateNovas(gameState.novas);
     });
   }
 
-  override update() {
+  override update(_time: any, _delta: number) {
     if (!this.#player) return;
 
     this.#player.update();
@@ -149,11 +111,7 @@ export default class Game extends Phaser.Scene {
 
     this.#player?.move(dx, dy);
 
-    this.#socket?.emit('player:move', {
-      roomId: this.#roomId,
-      direction,
-      seqNumber: this.#seqNumber,
-    });
+    this.#socket?.emit('player:move', this.#roomId, direction, this.#seqNumber);
   };
 
   #updatePlayerPosition(
@@ -207,11 +165,50 @@ export default class Game extends Phaser.Scene {
     }
   }
 
-  #cleanupStaleBullets(serverBullets: Map<number, BulletType>) {
+  #updateBullets(bullets: [number, BulletType][]) {
+    const serverBullets = new Map(bullets);
+
+    for (const [id, serverBullet] of serverBullets) {
+      const bullet = this.#bullets.get(id);
+      if (!bullet) {
+        this.#createBullet(id, serverBullet);
+      } else {
+        bullet.y = Phaser.Math.Linear(bullet.y, serverBullet.y, 0.3);
+      }
+    }
     for (const [id, bullet] of this.#bullets) {
       if (!serverBullets.has(id)) {
         bullet.deactivate();
         this.#bullets.delete(id);
+      }
+    }
+  }
+
+  #updateNovas(novas: [number, NovaType][]) {
+    const serverNovas = new Map(novas);
+
+    for (const [id, serverNova] of serverNovas) {
+      const { x, y, colorIdx } = serverNova;
+      const nova = this.#novas.get(id);
+
+      const color = COLORS[colorIdx];
+      if (!color) return;
+
+      if (!nova) {
+        const newNova = this.#novaGroup?.getFirstDead(false) as Nova | null;
+        if (newNova) {
+          newNova.activate(x, y, color);
+          this.#novas.set(id, newNova);
+        }
+      } else {
+        nova.y = y;
+      }
+    }
+
+    for (const [id, nova] of this.#novas) {
+      if (!serverNovas.has(id)) {
+        nova.deactivate();
+        this.#novas.delete(id);
       }
     }
   }

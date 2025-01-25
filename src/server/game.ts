@@ -21,7 +21,7 @@ export class Game {
     setInterval(() => {
       rooms.forEach((room) => {
         if (!room.isAvailable) {
-          room.updateState();
+          room.updateGameState();
         }
       });
     }, 1000 / 60);
@@ -30,7 +30,7 @@ export class Game {
     setInterval(() => {
       rooms.forEach((room) => {
         if (!room.isAvailable) {
-          this.#socketManager.emitGameState(room.id);
+          this.#socketManager.broadcastGameState(room.id);
         }
       });
     }, 1000 / 20);

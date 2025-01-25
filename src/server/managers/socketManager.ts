@@ -3,17 +3,12 @@ import type { RoomsManager } from './roomsManager.js';
 import type {
   ClientToServerEvents,
   Direction,
-  PlayerSelection,
+  PlayerProfile,
   ServerToClientEvents,
 } from '../../shared/types.js';
-import {
-  COLORS,
-  GAME_HEIGHT,
-  GAME_WIDTH,
-  PLAYER_SPEED,
-} from '../../shared/constants.js';
+import { COLORS, PLAYER_SPEED } from '../../shared/constants.js';
 
-type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
+type TSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 export class SocketManager {
   #io;
@@ -27,18 +22,18 @@ export class SocketManager {
     this.#roomsManager = roomsManager;
 
     this.#io.on('connection', (socket) => {
-      this.#setupListeners(socket);
+      this.#registerListeners(socket);
     });
   }
 
-  #setupListeners(socket: GameSocket) {
-    socket.on('player:join', (playerSelection) => {
-      this.#onPlayerJoin(socket, playerSelection);
+  #registerListeners(socket: TSocket) {
+    socket.on('player:join', (playerProfile) => {
+      this.#onPlayerJoin(socket, playerProfile);
     });
     socket.on('player:move', (roomId, direction, seqNumber) => {
       this.#onPlayerMove(socket, roomId, direction, seqNumber);
     });
-    socket.on('player:fire', (roomId: string, x: number, y: number) => {
+    socket.on('player:fire', (roomId, x, y) => {
       this.#onPlayerFire(socket, roomId, x, y);
     });
     socket.on('player:colorChange', (roomId) => {
@@ -49,49 +44,37 @@ export class SocketManager {
     });
   }
 
-  #onPlayerJoin(socket: GameSocket, playerSelection: PlayerSelection) {
-    const room = this.#roomsManager.getRoom();
+  #onPlayerJoin(socket: TSocket, playerProfile: PlayerProfile) {
+    const room = this.#roomsManager.findOrCreateRoom();
+    const player = room.addPlayer(socket.id, playerProfile);
+    if (!player) return;
 
-    const slot = room.availableSlots.pop();
-    if (slot === undefined) return;
-
-    const x = GAME_WIDTH / 2 - 300 + slot * 200;
-    const y = GAME_HEIGHT - 200;
-    const colorIdx = Math.floor(Math.random() * COLORS.length);
-    const player = {
-      id: socket.id,
-      x,
-      y,
-      slot,
-      colorIdx,
-      seqNumber: 0,
-      kills: 0,
-      ...playerSelection,
-    };
-
-    room.players.push(player);
     socket.join(room.id);
 
-    if (room.players.length === 1 && !room.timer) {
-      room.setupTimer(room, () => {
+    if (room.players.length === 1) {
+      room.setupTimer(() => {
         this.#io.to(room.id).emit('game:start', room.id, room.players);
       });
     }
-    socket.emit('game:currentState', room.players, room.timer?.endTimeMs ?? 0);
+
+    socket.emit('lobby:state', room.players, room.timer?.endTime ?? 0);
     socket.to(room.id).emit('player:joined', player);
 
-    room.finalizeOnRoomFull(room, () => {
+    if (room.isFull()) {
+      room.closeLobby();
       this.#io.to(room.id).emit('game:start', room.id, room.players);
-    });
+    }
   }
 
   #onPlayerMove(
-    socket: GameSocket,
+    socket: TSocket,
     roomId: string,
     direction: Direction,
     seqNumber: number
   ) {
-    const player = this.#getPlayerFromRoom(roomId, socket.id);
+    const room = this.#roomsManager.getRoomById(roomId);
+
+    const player = room?.getPlayer(socket.id);
     if (!player) return;
 
     player.seqNumber = seqNumber;
@@ -111,11 +94,11 @@ export class SocketManager {
     }
   }
 
-  #onPlayerFire(socket: GameSocket, roomId: string, x: number, y: number) {
+  #onPlayerFire(socket: TSocket, roomId: string, x: number, y: number) {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;
 
-    const player = this.#getPlayerFromRoom(roomId, socket.id);
+    const player = room.getPlayer(socket.id);
     if (!player) return;
 
     const { bulletCounter, bullets } = room;
@@ -129,14 +112,16 @@ export class SocketManager {
     room.bulletCounter++;
   }
 
-  #onPlayerColorChange(socket: GameSocket, roomId: string) {
-    const player = this.#getPlayerFromRoom(roomId, socket.id);
+  #onPlayerColorChange(socket: TSocket, roomId: string) {
+    const room = this.#roomsManager.getRoomById(roomId);
+
+    const player = room?.getPlayer(socket.id);
     if (!player) return;
 
     player.colorIdx = (player.colorIdx + 1) % COLORS.length;
   }
 
-  #onDisconnect(socket: GameSocket) {
+  #onDisconnect(socket: TSocket) {
     // exclude the socket's own room (socket is automatically placed in a room with its socket.id)
     const roomIds = Array.from(socket.rooms).filter(
       (roomId) => roomId !== socket.id
@@ -144,34 +129,22 @@ export class SocketManager {
 
     roomIds.forEach((roomId) => {
       const room = this.#roomsManager.getRoomById(roomId);
-      const playersCount = room?.removePlayer(socket.id);
-      socket.to(roomId).emit('player:left', socket.id);
+      if (!room) return;
 
+      const playersCount = room.removePlayer(socket.id);
       if (playersCount === 0) {
         this.#roomsManager.deleteRoom(roomId);
       }
+
+      socket.to(roomId).emit('player:left', socket.id);
     });
   }
 
-  #getPlayerFromRoom(roomId: string, playerId: string) {
-    const room = this.#roomsManager.getRoomById(roomId);
-    if (!room) {
-      console.error('Room with the given id not found');
-      return null;
-    }
-
-    const player = room.players.find((player) => player.id === playerId);
-    if (!player) {
-      console.error('Player not found');
-      return null;
-    }
-    return player;
-  }
-
-  emitGameState(roomId: string) {
+  broadcastGameState(roomId: string) {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;
 
+    // send only the changeable and necessary player data
     const players = room.players.map((player) => ({
       id: player.id,
       x: player.x,

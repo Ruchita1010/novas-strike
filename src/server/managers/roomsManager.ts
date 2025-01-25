@@ -3,30 +3,37 @@ import { Room } from '../room.js';
 export class RoomsManager {
   #rooms: Map<string, Room> = new Map();
 
-  #createRoom() {
-    const room = new Room();
-    this.#rooms.set(room.id, room);
-    return room;
+  #createNewRoom() {
+    const newRoom = new Room();
+    this.#rooms.set(newRoom.id, newRoom);
+    return newRoom;
   }
 
-  getRoom() {
-    for (const [, room] of this.#rooms) {
-      const remainingTime = room.timer
-        ? Math.floor((room.timer.endTimeMs - Date.now()) / 1000)
-        : 0;
-      if (room.isAvailable && remainingTime > 3) {
-        return room;
+  findOrCreateRoom() {
+    for (const room of this.#rooms.values()) {
+      const { isAvailable, timer } = room;
+
+      if (isAvailable && timer) {
+        const remainingTime = Math.floor((timer.endTime - Date.now()) / 1000);
+        if (remainingTime > 3) {
+          return room;
+        }
       }
     }
-    return this.#createRoom();
+    return this.#createNewRoom();
+  }
+
+  getRoomById(id: string) {
+    const room = this.#rooms.get(id);
+    if (!room) {
+      console.error('Room with the given id not found');
+      return;
+    }
+    return room;
   }
 
   getAllRooms() {
     return this.#rooms;
-  }
-
-  getRoomById(id: string) {
-    return this.#rooms.get(id);
   }
 
   deleteRoom(id: string) {

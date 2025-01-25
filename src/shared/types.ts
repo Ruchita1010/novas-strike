@@ -9,7 +9,7 @@ export type Player = {
   seqNumber: number;
 };
 
-export type PlayerSelection = Pick<Player, 'name' | 'spriteKey'>;
+export type PlayerProfile = Pick<Player, 'name' | 'spriteKey'>;
 
 export type Direction = 'left' | 'right' | 'up' | 'down';
 
@@ -26,7 +26,7 @@ export type Nova = {
   colorIdx: number;
 };
 
-type PlayerDelta = {
+type PlayerState = {
   id: string;
   x: number;
   y: number;
@@ -35,17 +35,13 @@ type PlayerDelta = {
 };
 
 export type GameState = {
-  players: PlayerDelta[];
+  players: PlayerState[];
   bullets: [number, Bullet][];
   novas: [number, Nova][];
 };
 
 export type ClientToServerEvents = {
-  'player:join': (
-    playerSelection: PlayerSelection,
-    gameWidth: number,
-    gameHeight: number
-  ) => void;
+  'player:join': (playerProfile: PlayerProfile) => void;
   'player:move': (
     roomId: string,
     direction: Direction,
@@ -58,7 +54,7 @@ export type ClientToServerEvents = {
 export type ServerToClientEvents = {
   'player:joined': (player: Player) => void;
   'player:left': (playerId: string) => void;
-  'game:currentState': (players: Player[], timerEndTime: number) => void;
+  'lobby:state': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
   'game:state': (gameState: GameState) => void;
 };

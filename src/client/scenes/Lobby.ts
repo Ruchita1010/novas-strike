@@ -4,13 +4,13 @@ import { formatTime } from '../utils';
 import type {
   ClientToServerEvents,
   Player,
-  PlayerSelection,
+  PlayerProfile,
   ServerToClientEvents,
 } from '../../shared/types';
 
 export default class Lobby extends Scene {
   #socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
-  #playerSelection?: PlayerSelection;
+  #playerProfile?: PlayerProfile;
   #playerContainers: Map<string, Phaser.GameObjects.Container> = new Map();
   #timerEvent?: Phaser.Time.TimerEvent;
 
@@ -18,8 +18,8 @@ export default class Lobby extends Scene {
     super('Lobby');
   }
 
-  init(data: PlayerSelection) {
-    this.#playerSelection = data;
+  init(data: PlayerProfile) {
+    this.#playerProfile = data;
   }
 
   preload() {
@@ -36,20 +36,15 @@ export default class Lobby extends Scene {
       fontSize: '24px',
     });
 
-    if (!this.#playerSelection) {
+    if (!this.#playerProfile) {
       console.error('Player selection data missing. Unable to join the game!');
       return;
     }
 
-    this.#socket.emit(
-      'player:join',
-      this.#playerSelection,
-      this.scale.width,
-      this.scale.height
-    );
+    this.#socket.emit('player:join', this.#playerProfile);
 
-    this.#socket.on('game:currentState', (players, endTimeMs) => {
-      this.#addTimer(endTimeMs);
+    this.#socket.on('lobby:state', (players, endTime) => {
+      this.#addTimer(endTime);
       players.forEach((player) => this.#addPlayer(player));
     });
 
@@ -66,21 +61,21 @@ export default class Lobby extends Scene {
     });
   }
 
-  #addTimer(endTimeMs: number) {
-    const remainingTime = Math.floor((endTimeMs - Date.now()) / 1000);
+  #addTimer(endTime: number) {
+    const remainingTime = Math.floor((endTime - Date.now()) / 1000);
     const timerText = this.add.text(20, 20, formatTime(remainingTime));
 
     this.#timerEvent = this.time.addEvent({
       delay: 100,
       callback: this.#updateTimerText,
       callbackScope: this,
-      args: [timerText, endTimeMs],
+      args: [timerText, endTime],
       loop: true,
     });
   }
 
-  #updateTimerText(timerText: Phaser.GameObjects.Text, endTimeMs: number) {
-    const remainingTime = Math.floor((endTimeMs - Date.now()) / 1000);
+  #updateTimerText(timerText: Phaser.GameObjects.Text, endTime: number) {
+    const remainingTime = Math.floor((endTime - Date.now()) / 1000);
     if (remainingTime <= 0) {
       timerText?.setText('00:00');
       this.#timerEvent?.remove();

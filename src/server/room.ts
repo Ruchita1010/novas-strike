@@ -1,10 +1,10 @@
 import { ObjectPool } from './objectPool.js';
 import { getRandomIntVal } from './utils.js';
-import type { Bullet, Nova, Player } from '../shared/types.js';
+import type { Bullet, Nova, Player, PlayerProfile } from '../shared/types.js';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
 
 const MAX_PLAYERS_PER_ROOM = 4;
-const WAITING_TIME = 30_000;
+const TIMER_DURATION = 30_000;
 
 export class Room {
   id: string;
@@ -16,7 +16,7 @@ export class Room {
   bullets: Map<number, Bullet>;
   isAvailable: boolean;
   availableSlots: number[];
-  timer: { id: NodeJS.Timeout; endTimeMs: number } | null;
+  timer: { id: NodeJS.Timeout; endTime: number } | null;
 
   constructor() {
     this.id = `room_${Date.now()}`;
@@ -34,36 +34,72 @@ export class Room {
     this.timer = null;
   }
 
-  #finalizeRoom(room: Room) {
-    room.isAvailable = false;
-    if (room.timer) {
-      clearTimeout(room.timer.id);
-      room.timer = null;
+  closeLobby() {
+    this.isAvailable = false;
+    if (this.timer) {
+      clearTimeout(this.timer.id);
+      this.timer = null;
     }
   }
 
-  setupTimer(room: Room, onTimerEnd: () => void) {
-    const endTimeMs = Date.now() + WAITING_TIME;
-    const id = setTimeout(() => {
-      this.#finalizeRoom(room);
-      onTimerEnd();
-    }, WAITING_TIME);
-    room.timer = { id, endTimeMs };
-  }
-
-  finalizeOnRoomFull(room: Room, onRoomFull: () => void) {
-    if (room.players.length === MAX_PLAYERS_PER_ROOM) {
-      this.#finalizeRoom(room);
-      onRoomFull();
+  setupTimer(cb: () => void) {
+    // not really needed as the only time this func gets called will be on first player join but just a safety check ig
+    if (this.timer) {
+      clearTimeout(this.timer.id);
     }
+
+    const endTime = Date.now() + TIMER_DURATION;
+    this.timer = {
+      id: setTimeout(() => {
+        this.closeLobby();
+        cb();
+      }, TIMER_DURATION),
+      endTime,
+    };
   }
 
-  removePlayer(socketId: string) {
+  isFull() {
+    return this.players.length === MAX_PLAYERS_PER_ROOM;
+  }
+
+  getPlayer(playerId: string) {
+    const player = this.players.find((player) => player.id === playerId);
+    if (!player) {
+      console.error('Player not found!');
+      return;
+    }
+    return player;
+  }
+
+  addPlayer(playerId: string, playerProfile: PlayerProfile) {
+    const slot = this.availableSlots.pop();
+    if (slot === undefined) {
+      console.error('No available slots in the room!');
+      return null;
+    }
+
+    const x = GAME_WIDTH / 2 - 300 + slot * 200;
+    const y = GAME_HEIGHT - 200;
+    const colorIdx = Math.floor(Math.random() * COLORS.length);
+
+    const player: Player = {
+      id: playerId,
+      x,
+      y,
+      slot,
+      colorIdx,
+      seqNumber: 0,
+      ...playerProfile,
+    };
+
+    this.players.push(player);
+    return player;
+  }
+
+  removePlayer(playerId: string) {
     this.players = this.players.filter((player) => {
-      if (player.id === socketId) {
-        if (player.slot !== undefined) {
-          this.availableSlots.push(player.slot);
-        }
+      if (player.id === playerId && player.slot !== undefined) {
+        this.availableSlots.push(player.slot);
         return false;
       }
       return true;
@@ -72,12 +108,18 @@ export class Room {
     return this.players.length;
   }
 
-  #updateBullets() {
-    for (const [id, bullet] of this.bullets) {
-      bullet.y -= 5;
-      if (bullet.y <= 0) {
-        this.bullets.delete(id);
-      }
+  #spawnNovaWave() {
+    const waveSize = getRandomIntVal(5, 10);
+
+    for (let i = 0; i < waveSize; i++) {
+      const nova = this.novaPool.acquire();
+      if (!nova) continue;
+
+      nova.x = getRandomIntVal(10, GAME_WIDTH - 10);
+      nova.y = getRandomIntVal(-100, -10);
+      nova.colorIdx = getRandomIntVal(0, COLORS.length - 1);
+
+      this.novas.set(this.novaCounter++, nova);
     }
   }
 
@@ -87,6 +129,15 @@ export class Room {
       if (nova.y >= GAME_HEIGHT) {
         this.novaPool.release(nova);
         this.novas.delete(id);
+      }
+    }
+  }
+
+  #updateBullets() {
+    for (const [id, bullet] of this.bullets) {
+      bullet.y -= 5;
+      if (bullet.y <= 0) {
+        this.bullets.delete(id);
       }
     }
   }
@@ -109,22 +160,7 @@ export class Room {
     }
   }
 
-  #spawnNovaWave() {
-    const waveSize = getRandomIntVal(5, 10);
-
-    for (let i = 0; i < waveSize; i++) {
-      const nova = this.novaPool.acquire();
-      if (!nova) continue;
-
-      nova.x = getRandomIntVal(10, GAME_WIDTH - 10);
-      nova.y = getRandomIntVal(-100, -10);
-      nova.colorIdx = getRandomIntVal(0, COLORS.length - 1);
-
-      this.novas.set(this.novaCounter++, nova);
-    }
-  }
-
-  updateState() {
+  updateGameState() {
     if (this.novas.size <= 8) {
       this.#spawnNovaWave();
     }

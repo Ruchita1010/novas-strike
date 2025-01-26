@@ -145,12 +145,11 @@ export class Room {
   #checkCollisions() {
     for (const [bulletId, bullet] of this.bullets) {
       for (const [novaId, nova] of this.novas) {
-        const collision =
-          bullet.x < nova.x + 64 &&
-          bullet.x + 9 > nova.x &&
-          bullet.y < nova.y + 64 &&
-          bullet.y + 15 > nova.y;
-        if (collision && bullet.colorIdx === nova.colorIdx) {
+        const dx = bullet.x - nova.x;
+        const dy = bullet.y - nova.y;
+        const distance = dx * dx + dy * dy;
+
+        if (distance <= 1000 && bullet.colorIdx === nova.colorIdx) {
           this.bullets.delete(bulletId);
           this.novaPool.release(nova);
           this.novas.delete(novaId);

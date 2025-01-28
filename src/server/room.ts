@@ -5,6 +5,7 @@ import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
 
 const MAX_PLAYERS_PER_ROOM = 4;
 const TIMER_DURATION = 30_000;
+const COLLISION_RADIUS_SQUARED = 1024;
 
 export class Room {
   id: string;
@@ -110,6 +111,7 @@ export class Room {
 
   #spawnNovaWave() {
     const waveSize = getRandomIntVal(5, 10);
+    const newNovas: Nova[] = [];
 
     for (let i = 0; i < waveSize; i++) {
       const nova = this.novaPool.acquire();
@@ -119,6 +121,13 @@ export class Room {
       nova.y = getRandomIntVal(-100, -10);
       nova.colorIdx = getRandomIntVal(0, COLORS.length - 1);
 
+      newNovas.push(nova);
+    }
+
+    newNovas.sort((a, b) => a.x - b.x);
+
+    // Insert sorted novas directly to skip sorting before each sweep (collision check) given that novas are spawned as a group at intervals
+    for (const nova of newNovas) {
       this.novas.set(this.novaCounter++, nova);
     }
   }
@@ -145,11 +154,16 @@ export class Room {
   #checkCollisions() {
     for (const [bulletId, bullet] of this.bullets) {
       for (const [novaId, nova] of this.novas) {
+        // Subtract nova's radius to get its left edge as novas are sorted by center x-coord
+        if (nova.x - 32 > bullet.x) break;
+        if (bullet.colorIdx !== nova.colorIdx) continue;
+
         const dx = bullet.x - nova.x;
         const dy = bullet.y - nova.y;
+        // use squared distance to avoid costly Math.sqrt()
         const distance = dx * dx + dy * dy;
 
-        if (distance <= 1000 && bullet.colorIdx === nova.colorIdx) {
+        if (distance <= COLLISION_RADIUS_SQUARED) {
           this.bullets.delete(bulletId);
           this.novaPool.release(nova);
           this.novas.delete(novaId);

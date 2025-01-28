@@ -18,6 +18,7 @@ export class Room {
   isAvailable: boolean;
   availableSlots: number[];
   timer: { id: NodeJS.Timeout; endTime: number } | null;
+  lastDamageTime: number;
 
   constructor() {
     this.id = `room_${Date.now()}`;
@@ -33,6 +34,7 @@ export class Room {
       (_, i) => MAX_PLAYERS_PER_ROOM - 1 - i
     );
     this.timer = null;
+    this.lastDamageTime = 0;
   }
 
   closeLobby() {
@@ -90,6 +92,7 @@ export class Room {
       slot,
       colorIdx,
       seqNumber: 0,
+      health: 100,
       ...playerProfile,
     };
 
@@ -171,6 +174,26 @@ export class Room {
         }
       }
     }
+  }
+
+  isPlayerInNovaRange() {
+    for (const player of this.players) {
+      for (const [, nova] of this.novas) {
+        if (player.x < nova.x - 64) break;
+        if (player.x > nova.x + 64) continue;
+
+        if (player.y >= nova.y && player.y <= nova.y + 100) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  applyDamageToPlayers() {
+    this.players.forEach((player) => {
+      player.health -= 10;
+    });
   }
 
   updateGameState() {

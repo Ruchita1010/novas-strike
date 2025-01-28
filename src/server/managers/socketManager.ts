@@ -140,6 +140,10 @@ export class SocketManager {
     });
   }
 
+  broadcastDamage(roomId: string) {
+    this.#io.to(roomId).emit('nova:attacked');
+  }
+
   broadcastGameState(roomId: string) {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;

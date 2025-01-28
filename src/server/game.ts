@@ -22,6 +22,13 @@ export class Game {
       rooms.forEach((room) => {
         if (!room.isAvailable) {
           room.updateGameState();
+          if (Date.now() - room.lastDamageTime > 1000) {
+            if (room.isPlayerInNovaRange()) {
+              room.applyDamageToPlayers();
+              this.#socketManager.broadcastDamage(room.id);
+              room.lastDamageTime = Date.now();
+            }
+          }
         }
       });
     }, 1000 / 60);

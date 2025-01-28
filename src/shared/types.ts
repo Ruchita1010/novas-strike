@@ -7,6 +7,7 @@ export type Player = {
   slot: number;
   colorIdx: number;
   seqNumber: number;
+  health: number;
 };
 
 export type PlayerProfile = Pick<Player, 'name' | 'spriteKey'>;
@@ -57,4 +58,5 @@ export type ServerToClientEvents = {
   'lobby:state': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
   'game:state': (gameState: GameState) => void;
+  'nova:attacked': () => void;
 };

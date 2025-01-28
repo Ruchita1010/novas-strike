@@ -6,7 +6,12 @@ import type {
   PlayerProfile,
   ServerToClientEvents,
 } from '../../shared/types.js';
-import { COLORS, PLAYER_SPEED } from '../../shared/constants.js';
+import {
+  COLORS,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  PLAYER_SPEED,
+} from '../../shared/constants.js';
 
 type TSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
@@ -80,16 +85,16 @@ export class SocketManager {
     player.seqNumber = seqNumber;
     switch (direction) {
       case 'left':
-        player.x -= PLAYER_SPEED;
+        player.x = Math.max(40, player.x - PLAYER_SPEED);
         break;
       case 'right':
-        player.x += PLAYER_SPEED;
+        player.x = Math.min(GAME_WIDTH - 40, player.x + PLAYER_SPEED);
         break;
       case 'up':
-        player.y -= PLAYER_SPEED;
+        player.y = Math.max(40, player.y - PLAYER_SPEED);
         break;
       case 'down':
-        player.y += PLAYER_SPEED;
+        player.y = Math.min(GAME_HEIGHT - 40, player.y + PLAYER_SPEED);
         break;
     }
   }

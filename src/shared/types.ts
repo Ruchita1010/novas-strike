@@ -59,5 +59,6 @@ export type ServerToClientEvents = {
   'lobby:state': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
   'game:state': (gameState: GameState) => void;
+  'game:over': () => void;
   'nova:attacked': () => void;
 };

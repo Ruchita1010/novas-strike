@@ -19,6 +19,7 @@ export class Room {
   availableSlots: number[];
   timer: { id: NodeJS.Timeout; endTime: number } | null;
   lastDamageTime: number;
+  novaWaveCounter: number;
 
   constructor() {
     this.id = `room_${Date.now()}`;
@@ -35,6 +36,7 @@ export class Room {
     );
     this.timer = null;
     this.lastDamageTime = 0;
+    this.novaWaveCounter = 0;
   }
 
   closeLobby() {
@@ -201,9 +203,17 @@ export class Room {
     });
   }
 
+  isGameOver() {
+    if (this.players[0]?.health === 0 || this.novaWaveCounter === 10) {
+      return true;
+    }
+    return false;
+  }
+
   updateGameState() {
-    if (this.novas.size <= 8) {
+    if (this.novas.size <= 0) {
       this.#spawnNovaWave();
+      this.novaWaveCounter++;
     }
 
     this.#updateNovas();

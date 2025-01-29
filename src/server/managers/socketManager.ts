@@ -149,6 +149,10 @@ export class SocketManager {
     this.#io.to(roomId).emit('nova:attacked');
   }
 
+  broadcastGameOver(roomId: string) {
+    this.#io.to(roomId).emit('game:over');
+  }
+
   broadcastGameState(roomId: string) {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;

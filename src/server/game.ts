@@ -21,6 +21,11 @@ export class Game {
     setInterval(() => {
       rooms.forEach((room) => {
         if (!room.isAvailable) {
+          if (room.isGameOver()) {
+            this.#socketManager.broadcastGameOver(room.id);
+            this.#roomsManager.deleteRoom(room.id);
+            return;
+          }
           room.updateGameState();
           if (Date.now() - room.lastDamageTime > 1000) {
             if (room.isPlayerInNovaRange()) {

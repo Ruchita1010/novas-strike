@@ -7,6 +7,7 @@ export type Player = {
   slot: number;
   colorIdx: number;
   seqNumber: number;
+  kills: number;
   health: number;
 };
 

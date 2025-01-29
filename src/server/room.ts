@@ -92,6 +92,7 @@ export class Room {
       slot,
       colorIdx,
       seqNumber: 0,
+      kills: 0,
       health: 100,
       ...playerProfile,
     };
@@ -170,6 +171,10 @@ export class Room {
           this.bullets.delete(bulletId);
           this.novaPool.release(nova);
           this.novas.delete(novaId);
+          const player = this.getPlayer(bullet.playerId);
+          if (player) {
+            player.kills++;
+          }
           break;
         }
       }

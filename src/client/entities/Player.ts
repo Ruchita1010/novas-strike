@@ -11,6 +11,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   #lastFiredTime = 0;
   readonly #coolDown = 250;
   #bulletGroup: BulletGroup;
+  #health = 100;
+  #healthBar;
 
   constructor(scene: Phaser.Scene, playerData: PlayerType) {
     const { id, name, x, y, spriteKey } = playerData;
@@ -24,6 +26,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.#targetY = y;
     this.#nameText = scene.add.text(x, y + 45, name).setOrigin(0.5);
     this.#bulletGroup = new BulletGroup(scene);
+    this.#healthBar = scene.add.graphics();
+    this.#healthBar.fillStyle(0x2384ff, 1);
+    this.#healthBar.fillRect(-4, -10, 7, 35);
+
     if (scene.input.keyboard) {
       this.#cursors = scene.input.keyboard.createCursorKeys();
       this.#keys = {
@@ -78,11 +84,21 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.#targetY += dy;
   }
 
+  updateHealth(amount: number) {
+    this.#health = Phaser.Math.Clamp(this.#health + amount, 0, 100);
+    this.#healthBar.clear();
+
+    const healthHeight = (this.#health / 100) * 35;
+    this.#healthBar.fillStyle(0x2384ff, 1);
+    this.#healthBar.fillRect(-4, 25 - healthHeight, 7, healthHeight);
+  }
+
   override update() {
     const x = Phaser.Math.Linear(this.x, this.#targetX, 0.5);
     const y = Phaser.Math.Linear(this.y, this.#targetY, 0.5);
 
     this.setPosition(x, y);
     this.#nameText.setPosition(x, y + 45);
+    this.#healthBar.setPosition(x, y);
   }
 }

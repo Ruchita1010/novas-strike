@@ -71,6 +71,12 @@ export default class Game extends Phaser.Scene {
       this.#updateBullets(gameState.bullets);
       this.#updateNovas(gameState.novas);
     });
+
+    this.#socket?.on('nova:attacked', () => {
+      this.cameras.main.shake(200, 0.01);
+      this.#player?.updateHealth(-10);
+      this.#otherPlayers.forEach((player) => player.updateHealth(-10));
+    });
   }
 
   override update(_time: any, _delta: number) {

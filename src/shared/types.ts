@@ -42,6 +42,14 @@ export type GameState = {
   novas: [number, Nova][];
 };
 
+export type PlayerStat = Pick<Player, 'name' | 'spriteKey' | 'kills'>;
+
+export type GameResult = {
+  playerStats: PlayerStat[];
+  killPercentage: number;
+  isVictory: boolean;
+};
+
 export type ClientToServerEvents = {
   'player:join': (playerProfile: PlayerProfile) => void;
   'player:move': (
@@ -59,6 +67,6 @@ export type ServerToClientEvents = {
   'lobby:state': (players: Player[], timerEndTime: number) => void;
   'game:start': (roomId: string, players: Player[]) => void;
   'game:state': (gameState: GameState) => void;
-  'game:over': () => void;
+  'game:over': (gameResult: GameResult) => void;
   'nova:attacked': () => void;
 };

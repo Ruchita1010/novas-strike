@@ -150,7 +150,26 @@ export class SocketManager {
   }
 
   broadcastGameOver(roomId: string) {
-    this.#io.to(roomId).emit('game:over');
+    const room = this.#roomsManager.getRoomById(roomId);
+    if (!room) return;
+
+    const { players, novaCounter, novaWaveCounter } = room;
+    const playerStats = players.map(({ name, spriteKey, kills }) => ({
+      name,
+      spriteKey,
+      kills,
+    }));
+
+    const totalKills = players.reduce((sum, player) => sum + player.kills, 0);
+    const killPercentage =
+      novaCounter > 0 ? Math.floor((totalKills / novaCounter) * 100) : 0;
+    const isVictory = novaWaveCounter >= 10 && killPercentage >= 75;
+
+    this.#io.to(roomId).emit('game:over', {
+      playerStats,
+      killPercentage,
+      isVictory,
+    });
   }
 
   broadcastGameState(roomId: string) {

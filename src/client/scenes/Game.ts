@@ -7,6 +7,7 @@ import type {
   Bullet as BulletType,
   ClientToServerEvents,
   Direction,
+  GameResult,
   GameState,
   Nova as NovaType,
   Player as PlayerType,
@@ -76,6 +77,10 @@ export default class Game extends Phaser.Scene {
       this.cameras.main.shake(200, 0.01);
       this.#player?.updateHealth(-10);
       this.#otherPlayers.forEach((player) => player.updateHealth(-10));
+    });
+
+    this.#socket?.on('game:over', (gameResult: GameResult) => {
+      this.scene.start('ResultBoard', gameResult);
     });
   }
 

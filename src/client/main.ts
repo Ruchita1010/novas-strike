@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import MainMenu from './scenes/MainMenu';
 import Lobby from './scenes/Lobby';
 import Game from './scenes/Game';
+import ResultBoard from './scenes/ResultBoard.js';
 import { GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
 
 const config = {
@@ -24,7 +25,7 @@ const config = {
   dom: {
     createContainer: true,
   },
-  scene: [MainMenu, Lobby, Game],
+  scene: [MainMenu, Lobby, Game, ResultBoard],
 };
 
 export default new Phaser.Game(config);

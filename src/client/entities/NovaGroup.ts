@@ -11,7 +11,7 @@ export default class NovaGroup extends Phaser.Physics.Arcade.Group {
   }
 }
 
-export class Nova extends Phaser.Physics.Arcade.Sprite {
+class Nova extends Phaser.Physics.Arcade.Sprite {
   color = 0xffffff;
   constructor(scene: Phaser.Scene, x: number, y: number, key: string) {
     super(scene, x, y, key);
@@ -42,3 +42,5 @@ export class Nova extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(true, true);
   }
 }
+
+export type { Nova };

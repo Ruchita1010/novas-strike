@@ -1,4 +1,4 @@
-import BulletGroup from '../scenes/BulletGroup';
+import BulletGroup from './BulletGroup';
 import type { Player as PlayerType } from '../../shared/types';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {

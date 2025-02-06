@@ -1,15 +1,15 @@
 import type { Socket } from 'socket.io-client';
 import Player from '../entities/Player';
-import NovaGroup from './NovaGroup';
-import type { Nova } from './NovaGroup';
-import type { Bullet } from './BulletGroup';
+import NovaGroup from '../entities/NovaGroup';
+import type { Nova } from '../entities/NovaGroup';
+import type { Bullet } from '../entities/BulletGroup';
 import type {
-  Bullet as BulletType,
   ClientToServerEvents,
   Direction,
   GameResult,
   GameState,
   Nova as NovaType,
+  Bullet as BulletType,
   Player as PlayerType,
   ServerToClientEvents,
 } from '../../shared/types';

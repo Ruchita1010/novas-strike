@@ -15,7 +15,7 @@ export default class BulletGroup extends Phaser.Physics.Arcade.Group {
   }
 }
 
-export class Bullet extends Phaser.Physics.Arcade.Sprite {
+class Bullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'bullet');
     scene.add.existing(this);
@@ -32,3 +32,5 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(true, true);
   }
 }
+
+export type { Bullet };

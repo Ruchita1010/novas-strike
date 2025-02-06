@@ -23,6 +23,7 @@ export default class Lobby extends Scene {
   }
 
   preload() {
+    this.load.image('lobby-bg', 'assets/images/lobby-bg.png');
     this.load.image('ship1', 'assets/images/ship1.png');
     this.load.image('ship2', 'assets/images/ship2.png');
     this.load.image('ship3', 'assets/images/ship3.png');
@@ -31,6 +32,8 @@ export default class Lobby extends Scene {
 
   create() {
     this.#socket = io();
+
+    this.add.image(0, 0, 'lobby-bg').setOrigin(0);
 
     this.add.text(this.scale.width / 2 - 200, 100, 'waiting for the team...', {
       fontSize: '24px',

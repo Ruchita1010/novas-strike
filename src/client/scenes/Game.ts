@@ -44,11 +44,14 @@ export default class Game extends Phaser.Scene {
   }
 
   preload() {
+    this.load.image('game-bg', 'assets/images/game-bg.png');
     this.load.image('bullet', 'assets/images/bullet.png');
     this.load.image('nova', 'assets/images/nova.png');
   }
 
   create({ players }: SceneInitData) {
+    this.add.image(0, 0, 'game-bg').setOrigin(0);
+
     this.#novaGroup = new NovaGroup(this);
 
     players.forEach((player) => {

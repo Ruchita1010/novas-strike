@@ -10,6 +10,11 @@ export default class MainMenu extends Scene {
   }
 
   preload() {
+    this.load.font(
+      'PixelifySans',
+      'assets/fonts/pixelifysans-regular.ttf',
+      'truetype'
+    );
     this.load.html('inputPanel', 'assets/dom/input-panel.html');
   }
 

@@ -36,7 +36,8 @@ export default class Lobby extends Scene {
     this.add.image(0, 0, 'lobby-bg').setOrigin(0);
 
     this.add.text(this.scale.width / 2 - 200, 100, 'waiting for the team...', {
-      fontSize: '24px',
+      fontFamily: 'PixelifySans',
+      fontSize: 30,
     });
 
     if (!this.#playerProfile) {
@@ -66,7 +67,10 @@ export default class Lobby extends Scene {
 
   #addTimer(endTime: number) {
     const remainingTime = Math.floor((endTime - Date.now()) / 1000);
-    const timerText = this.add.text(20, 20, formatTime(remainingTime));
+    const timerText = this.add.text(20, 20, formatTime(remainingTime), {
+      fontFamily: 'PixelifySans',
+      fontSize: 30,
+    });
 
     this.#timerEvent = this.time.addEvent({
       delay: 100,

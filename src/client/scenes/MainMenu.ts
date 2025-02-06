@@ -22,6 +22,14 @@ export default class MainMenu extends Scene {
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
 
+    this.add
+      .text(centerX, 80, '<< NOVAS STRIKE >>', {
+        color: '#fff8bc',
+        fontSize: 100,
+        fontFamily: 'PixelifySans',
+      })
+      .setOrigin(0.5);
+
     this.#inputPanel = this.add
       .dom(centerX, centerY)
       .createFromCache('inputPanel');

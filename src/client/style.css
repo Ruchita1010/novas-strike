@@ -1,17 +1,22 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 @font-face {
   font-family: 'Pixelify Sans';
   src: url('../../public/assets/fonts/pixelifysans-regular.ttf')
     format('truetype');
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --pale-yellow: #fff8bc;
+  --warm-orange: #cd894a;
+  --dark-brown: #361c1b;
+}
+
 body {
-  color: hsla(178, 60%, 92%, 0.87);
-  background-color: hsl(240, 2%, 10%);
+  background-color: #0d0d0d;
   font-family: 'Pixelify Sans', serif;
 }

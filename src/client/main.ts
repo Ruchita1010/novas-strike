@@ -7,7 +7,6 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
 
 const config = {
   type: Phaser.AUTO,
-  backgroundColor: '#2e2925',
   scale: {
     parent: 'game-container',
     mode: Phaser.Scale.FIT,

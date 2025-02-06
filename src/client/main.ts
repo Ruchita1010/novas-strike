@@ -15,6 +15,11 @@ const config = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
+  render: {
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true,
+  },
   physics: {
     default: 'arcade',
     arcade: {

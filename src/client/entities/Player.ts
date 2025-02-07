@@ -19,7 +19,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, spriteKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(1.2);
 
     this.id = id;
     this.#targetX = x;

@@ -84,7 +84,7 @@ export class Room {
     }
 
     const x = GAME_WIDTH / 2 - 300 + slot * 200;
-    const y = GAME_HEIGHT - 200;
+    const y = GAME_HEIGHT - 150;
     const colorIdx = Math.floor(Math.random() * COLORS.length);
 
     const player: Player = {

@@ -95,8 +95,13 @@ export default class Lobby extends Scene {
     const { id, x, y, spriteKey, name } = player;
     const playerContainer = this.add.container(x, y);
 
-    const spaceship = this.add.sprite(0, 0, spriteKey).setScale(1.5);
-    const playerNameText = this.add.text(0, 55, name).setOrigin(0.5);
+    const spaceship = this.add.sprite(0, 0, spriteKey);
+    const playerNameText = this.add
+      .text(0, 55, name, {
+        color: '#754232',
+        fontFamily: 'PixelifySans',
+      })
+      .setOrigin(0.5);
 
     playerContainer.add([spaceship, playerNameText]);
     this.#playerContainers.set(id, playerContainer);

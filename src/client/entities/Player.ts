@@ -1,11 +1,13 @@
 import BulletGroup from './BulletGroup';
 import type { Player as PlayerType } from '../../shared/types';
+import { COLORS } from '../../shared/constants';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   id;
   #nameText;
   #targetX;
   #targetY;
+  #colorIdx;
   #cursors;
   #keys;
   #lastFiredTime = 0;
@@ -15,7 +17,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   #healthBar;
 
   constructor(scene: Phaser.Scene, playerData: PlayerType) {
-    const { id, name, x, y, spriteKey } = playerData;
+    const { id, name, x, y, spriteKey, colorIdx } = playerData;
     super(scene, x, y, spriteKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -24,10 +26,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.#targetX = x;
     this.#targetY = y;
     this.#nameText = scene.add.text(x, y + 45, name).setOrigin(0.5);
+    this.#colorIdx = colorIdx;
     this.#bulletGroup = new BulletGroup(scene);
     this.#healthBar = scene.add.graphics();
-    this.#healthBar.fillStyle(0x2384ff, 1);
-    this.#healthBar.fillRect(-4, -10, 7, 35);
+    this.#drawHealthBar();
 
     if (scene.input.keyboard) {
       this.#cursors = scene.input.keyboard.createCursorKeys();
@@ -39,6 +41,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         keyC: scene.input.keyboard.addKey('C'),
       };
     }
+  }
+
+  #drawHealthBar() {
+    this.#healthBar.clear();
+    const color = COLORS[this.#colorIdx] || 0xffffff;
+    const healthHeight = (this.#health / 100) * 29;
+    this.#healthBar.fillStyle(color, 0.6);
+    this.#healthBar.fillRect(-3, 18 - healthHeight, 7, healthHeight);
   }
 
   getInput() {
@@ -84,12 +94,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   updateHealth(amount: number) {
-    this.#health = Phaser.Math.Clamp(this.#health + amount, 0, 100);
-    this.#healthBar.clear();
+    const newHealth = Phaser.Math.Clamp(this.#health + amount, 0, 100);
+    if (newHealth === this.#health) return;
+    this.#health = newHealth;
+    this.#drawHealthBar();
+  }
 
-    const healthHeight = (this.#health / 100) * 35;
-    this.#healthBar.fillStyle(0x2384ff, 1);
-    this.#healthBar.fillRect(-4, 25 - healthHeight, 7, healthHeight);
+  updateHealthBarColor(colorIdx: number) {
+    if (colorIdx === this.#colorIdx || !COLORS[colorIdx]) return;
+    this.#colorIdx = colorIdx;
+    this.#drawHealthBar();
   }
 
   override update() {

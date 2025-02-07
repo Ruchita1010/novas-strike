@@ -66,9 +66,9 @@ export default class Game extends Phaser.Scene {
     this.#socket?.on('game:state', (gameState: GameState) => {
       gameState.players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
         if (id === this.#socket?.id) {
-          this.#updatePlayerPosition(x, y, colorIdx, seqNumber);
+          this.#updatePlayer(x, y, colorIdx, seqNumber);
         } else {
-          this.#updateOtherPlayerPosition(id, x, y, colorIdx);
+          this.#updateOtherPlayer(id, x, y, colorIdx);
         }
       });
 
@@ -128,16 +128,11 @@ export default class Game extends Phaser.Scene {
     this.#socket?.emit('player:move', this.#roomId, direction, this.#seqNumber);
   };
 
-  #updatePlayerPosition(
-    x: number,
-    y: number,
-    colorIdx: number,
-    seqNumber: number
-  ) {
+  #updatePlayer(x: number, y: number, colorIdx: number, seqNumber: number) {
     if (!this.#player) return;
 
     this.#player.setTargetPosition(x, y);
-    this.#player.setTint(COLORS[colorIdx]);
+    this.#player.updateHealthBarColor(colorIdx);
 
     const lastAckedIndex = this.#inputs.findIndex(
       (input) => input.seqNumber === seqNumber
@@ -149,16 +144,11 @@ export default class Game extends Phaser.Scene {
     this.#inputs.forEach(({ dx, dy }) => this.#player?.move(dx, dy));
   }
 
-  #updateOtherPlayerPosition(
-    id: string,
-    x: number,
-    y: number,
-    colorIdx: number
-  ) {
+  #updateOtherPlayer(id: string, x: number, y: number, colorIdx: number) {
     const otherPlayer = this.#otherPlayers.get(id);
     if (otherPlayer) {
       otherPlayer.setTargetPosition(x, y);
-      otherPlayer.setTint(COLORS[colorIdx]);
+      otherPlayer.updateHealthBarColor(colorIdx);
     }
   }
 

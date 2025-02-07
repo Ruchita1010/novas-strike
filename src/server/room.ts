@@ -116,7 +116,7 @@ export class Room {
   }
 
   #spawnNovaWave() {
-    const waveSize = getRandomIntVal(5, 10);
+    const waveSize = getRandomIntVal(20, 25);
     const newNovas: Nova[] = [];
 
     for (let i = 0; i < waveSize; i++) {
@@ -189,7 +189,7 @@ export class Room {
         if (player.x < nova.x - 64) break;
         if (player.x > nova.x + 64) continue;
 
-        if (player.y >= nova.y && player.y <= nova.y + 100) {
+        if (player.y >= nova.y && player.y <= nova.y + 120) {
           return true;
         }
       }

@@ -20,7 +20,6 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'bullet');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setScale(1.2);
   }
 
   activate(x: number, y: number, color: number) {

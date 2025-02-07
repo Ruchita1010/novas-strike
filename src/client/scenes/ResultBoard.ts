@@ -26,9 +26,10 @@ export default class ResultBoard extends Phaser.Scene {
 
     this.add
       .text(centerX, 100, this.#isVictory ? 'VICTORY' : 'DEFEAT', {
-        fontFamily: 'PixelifySans',
-        fontSize: 52,
+        color: '#fff8bc',
+        fontSize: 55,
         fontStyle: 'bold',
+        fontFamily: 'PixelifySans',
       })
       .setOrigin(0.5);
 
@@ -38,8 +39,9 @@ export default class ResultBoard extends Phaser.Scene {
         160,
         `Your crew killed ${this.#killPercentage}% of novas`,
         {
-          fontFamily: 'PixelifySans',
+          color: '#cd894a',
           fontSize: 30,
+          fontFamily: 'PixelifySans',
         }
       )
       .setOrigin(0.5);
@@ -51,7 +53,11 @@ export default class ResultBoard extends Phaser.Scene {
     if (!this.#playerStats) return;
 
     this.add
-      .text(200, y, 'Kills: ', { fontFamily: 'PixelifySans', fontSize: 30 })
+      .text(200, y, 'Kills: ', {
+        color: '#fff8bc',
+        fontSize: 30,
+        fontFamily: 'PixelifySans',
+      })
       .setOrigin(0.5);
 
     const startX = centerX - (this.#playerStats.length - 1) * 100;
@@ -61,13 +67,18 @@ export default class ResultBoard extends Phaser.Scene {
       const { name, spriteKey, kills } = player;
 
       this.add
-        .text(x, y, `${kills}`, { fontFamily: 'PixelifySans', fontSize: 25 })
+        .text(x, y, `${kills}`, {
+          color: '#fff8bc',
+          fontSize: 25,
+          fontFamily: 'PixelifySans',
+        })
         .setOrigin(0.5);
       this.add.sprite(x, y + 100, spriteKey).setScale(1.5);
       this.add
         .text(x, y + 160, name, {
+          color: '#cd894a',
+          fontSize: 20,
           fontFamily: 'PixelifySans',
-          fontSize: '20px',
         })
         .setOrigin(0.5);
     });

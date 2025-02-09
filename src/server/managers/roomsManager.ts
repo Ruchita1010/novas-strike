@@ -11,10 +11,12 @@ export class RoomsManager {
 
   findOrCreateRoom() {
     for (const room of this.#rooms.values()) {
-      const { isAvailable, timer } = room;
+      const lobbyTimer = room.getLobbyTimer();
 
-      if (isAvailable && timer) {
-        const remainingTime = Math.floor((timer.endTime - Date.now()) / 1000);
+      if (room.isAvailable() && lobbyTimer) {
+        const remainingTime = Math.floor(
+          (lobbyTimer.endTime - Date.now()) / 1000
+        );
         if (remainingTime > 3) {
           return room;
         }

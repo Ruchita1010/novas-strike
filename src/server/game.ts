@@ -7,8 +7,8 @@ import type {
 } from '../shared/types.js';
 
 export class Game {
-  #roomsManager;
-  #socketManager;
+  #roomsManager: RoomsManager;
+  #socketManager: SocketManager;
 
   constructor(io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.#roomsManager = new RoomsManager();
@@ -20,20 +20,18 @@ export class Game {
     // -60fps
     setInterval(() => {
       rooms.forEach((room) => {
-        if (!room.isAvailable) {
-          if (room.isGameOver()) {
-            this.#socketManager.broadcastGameOver(room.id);
-            this.#roomsManager.deleteRoom(room.id);
-            return;
-          }
-          room.updateGameState();
-          if (Date.now() - room.lastDamageTime > 1000) {
-            if (room.isPlayerInNovaRange()) {
-              room.applyDamageToPlayers();
-              this.#socketManager.broadcastDamage(room.id);
-              room.lastDamageTime = Date.now();
-            }
-          }
+        if (room.isAvailable()) return;
+
+        if (room.isGameOver()) {
+          this.#socketManager.broadcastGameOver(room.id);
+          this.#roomsManager.deleteRoom(room.id);
+          return;
+        }
+
+        room.updateGameState();
+
+        if (room.attemptNovaAttack()) {
+          this.#socketManager.broadcastDamage(room.id);
         }
       });
     }, 1000 / 60);
@@ -41,9 +39,9 @@ export class Game {
     // -20fps
     setInterval(() => {
       rooms.forEach((room) => {
-        if (!room.isAvailable) {
-          this.#socketManager.broadcastGameState(room.id);
-        }
+        if (room.isAvailable()) return;
+
+        this.#socketManager.broadcastGameState(room.id);
       });
     }, 1000 / 20);
   }

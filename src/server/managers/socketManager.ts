@@ -16,8 +16,8 @@ import {
 type TSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 export class SocketManager {
-  #io;
-  #roomsManager;
+  #io: Server<ClientToServerEvents, ServerToClientEvents>;
+  #roomsManager: RoomsManager;
 
   constructor(
     io: Server<ClientToServerEvents, ServerToClientEvents>,
@@ -56,18 +56,22 @@ export class SocketManager {
 
     socket.join(room.id);
 
-    if (room.players.length === 1) {
-      room.setupTimer(() => {
-        this.#io.to(room.id).emit('game:start', room.id, room.players);
+    const players = room.getAllPlayers();
+    if (players.length === 1) {
+      room.setupLobbyTimer(() => {
+        this.#io.to(room.id).emit('game:start', room.id, players);
       });
     }
 
-    socket.emit('lobby:state', room.players, room.timer?.endTime ?? 0);
+    const lobbyEndTime = room.getLobbyTimer()?.endTime;
+    if (!lobbyEndTime) return;
+
+    socket.emit('lobby:state', players, lobbyEndTime);
     socket.to(room.id).emit('player:joined', player);
 
     if (room.isFull()) {
       room.closeLobby();
-      this.#io.to(room.id).emit('game:start', room.id, room.players);
+      this.#io.to(room.id).emit('game:start', room.id, players);
     }
   }
 
@@ -106,15 +110,7 @@ export class SocketManager {
     const player = room.getPlayer(socket.id);
     if (!player) return;
 
-    const { bulletCounter, bullets } = room;
-    bullets.set(bulletCounter, {
-      x,
-      y,
-      colorIdx: player.colorIdx,
-      playerId: socket.id,
-    });
-
-    room.bulletCounter++;
+    room.addBullet(player.id, x, y, player.colorIdx);
   }
 
   #onPlayerColorChange(socket: TSocket, roomId: string) {
@@ -132,6 +128,7 @@ export class SocketManager {
       (roomId) => roomId !== socket.id
     );
 
+    // at this point a player can join only one room but still keeping the loop for now
     roomIds.forEach((roomId) => {
       const room = this.#roomsManager.getRoomById(roomId);
       if (!room) return;
@@ -139,6 +136,7 @@ export class SocketManager {
       const playersCount = room.removePlayer(socket.id);
       if (playersCount === 0) {
         this.#roomsManager.deleteRoom(roomId);
+        return;
       }
 
       socket.to(roomId).emit('player:left', socket.id);
@@ -153,40 +151,28 @@ export class SocketManager {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;
 
-    const { players, novaCounter, novaWaveCounter } = room;
-    const playerStats = players.map(({ name, spriteKey, kills }) => ({
-      name,
-      spriteKey,
-      kills,
-    }));
-
-    const totalKills = players.reduce((sum, player) => sum + player.kills, 0);
-    const killPercentage =
-      novaCounter > 0 ? Math.floor((totalKills / novaCounter) * 100) : 0;
-    const isVictory = novaWaveCounter >= 10 && killPercentage >= 75;
-
-    this.#io.to(roomId).emit('game:over', {
-      playerStats,
-      killPercentage,
-      isVictory,
-    });
+    this.#io.to(roomId).emit('game:over', room.getGameStats());
   }
 
   broadcastGameState(roomId: string) {
     const room = this.#roomsManager.getRoomById(roomId);
     if (!room) return;
 
-    // send only the changeable and necessary player data
-    const players = room.players.map((player) => ({
-      id: player.id,
-      x: player.x,
-      y: player.y,
-      colorIdx: player.colorIdx,
-      seqNumber: player.seqNumber,
-    }));
-    const bullets = [...room.bullets.entries()];
-    const novas = [...room.novas.entries()];
+    const { players, bullets, novas } = room.getGameEntities();
+    const gameState = {
+      // send only the changeable and necessary player data
+      players: players.map(({ id, x, y, colorIdx, seqNumber }) => ({
+        id,
+        x,
+        y,
+        colorIdx,
+        seqNumber,
+      })),
+      // serialize
+      bullets: [...bullets.entries()],
+      novas: [...novas.entries()],
+    };
 
-    this.#io.to(roomId).emit('game:state', { players, bullets, novas });
+    this.#io.to(roomId).emit('game:state', gameState);
   }
 }

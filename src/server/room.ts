@@ -1,74 +1,94 @@
 import { ObjectPool } from './objectPool.js';
 import { getRandomIntVal } from './utils.js';
 import type { Bullet, Nova, Player, PlayerProfile } from '../shared/types.js';
-import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '../shared/constants.js';
-
-const MAX_PLAYERS_PER_ROOM = 4;
-const TIMER_DURATION = 30_000;
-const COLLISION_RADIUS_SQUARED = 1024;
+import {
+  COLORS,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+  HEALTH_DAMAGE_AMOUNT,
+  MAX_PLAYER_HEALTH,
+  NOVA_POOL_SIZE,
+} from '../shared/constants.js';
 
 export class Room {
+  static readonly #MAX_PLAYERS_PER_ROOM = 4;
+  static readonly #LOBBY_TIMER_DURATION = 30_000;
+  static readonly #NOVA_WIDTH = 56;
+  static readonly #NOVA_RADIUS = 28;
+  static readonly #NOVA_SPEED = 1;
+  static readonly #BULLET_SPEED = 5;
+  static readonly #MAX_NOVA_WAVES = 10;
+  static readonly #NOVA_PROXIMITY_RANGE = 120;
+  static readonly #COLLISION_RADIUS_SQUARED = 992.25; // 28(nova's r) + 3.5(bullet's r) = (31.5)^2
+  static readonly #DAMAGE_COOLDOWN = 1000;
+  static readonly #VICTORY_KILL_THRESHOLD = 75;
+
   id: string;
-  players: Player[];
-  novaCounter: number;
-  novaPool: ObjectPool<Nova>;
-  novas: Map<number, Nova>;
-  bulletCounter: number;
-  bullets: Map<number, Bullet>;
-  isAvailable: boolean;
-  availableSlots: number[];
-  timer: { id: NodeJS.Timeout; endTime: number } | null;
-  lastDamageTime: number;
-  novaWaveCounter: number;
+  #players: Player[] = [];
+  #novaCount: number = 0;
+  #novaPool: ObjectPool<Nova>;
+  #novas: Map<number, Nova> = new Map();
+  #bulletCount: number = 0;
+  #bullets: Map<number, Bullet> = new Map();
+  #available = true;
+  #availableSlots: number[] = Array.from(
+    { length: Room.#MAX_PLAYERS_PER_ROOM },
+    (_, i) => Room.#MAX_PLAYERS_PER_ROOM - 1 - i
+  );
+  #lobbyTimer: { id: NodeJS.Timeout; endTime: number } | null = null;
+  #novaWaveCount: number = 0;
+  #lastDamageTime: number = 0;
 
   constructor() {
     this.id = `room_${Date.now()}`;
-    this.players = [];
-    this.novaCounter = 0;
-    this.novas = new Map();
-    this.novaPool = new ObjectPool(() => ({ x: 0, y: 0, colorIdx: 0 }), 30);
-    this.bulletCounter = 0;
-    this.bullets = new Map();
-    this.isAvailable = true;
-    this.availableSlots = Array.from(
-      { length: MAX_PLAYERS_PER_ROOM },
-      (_, i) => MAX_PLAYERS_PER_ROOM - 1 - i
+    this.#novaPool = new ObjectPool(
+      () => ({ x: 0, y: 0, colorIdx: 0 }),
+      NOVA_POOL_SIZE
     );
-    this.timer = null;
-    this.lastDamageTime = 0;
-    this.novaWaveCounter = 0;
   }
 
   closeLobby() {
-    this.isAvailable = false;
-    if (this.timer) {
-      clearTimeout(this.timer.id);
-      this.timer = null;
+    this.#available = false;
+    if (this.#lobbyTimer) {
+      clearTimeout(this.#lobbyTimer.id);
+      this.#lobbyTimer = null;
     }
   }
 
-  setupTimer(cb: () => void) {
+  setupLobbyTimer(cb: () => void) {
     // not really needed as the only time this func gets called will be on first player join but just a safety check ig
-    if (this.timer) {
-      clearTimeout(this.timer.id);
+    if (this.#lobbyTimer) {
+      clearTimeout(this.#lobbyTimer.id);
     }
 
-    const endTime = Date.now() + TIMER_DURATION;
-    this.timer = {
+    const endTime = Date.now() + Room.#LOBBY_TIMER_DURATION;
+    this.#lobbyTimer = {
       id: setTimeout(() => {
         this.closeLobby();
         cb();
-      }, TIMER_DURATION),
+      }, Room.#LOBBY_TIMER_DURATION),
       endTime,
     };
   }
 
   isFull() {
-    return this.players.length === MAX_PLAYERS_PER_ROOM;
+    return this.#players.length === Room.#MAX_PLAYERS_PER_ROOM;
+  }
+
+  isAvailable() {
+    return this.#available;
+  }
+
+  getLobbyTimer() {
+    return this.#lobbyTimer;
+  }
+
+  getAllPlayers() {
+    return this.#players;
   }
 
   getPlayer(playerId: string) {
-    const player = this.players.find((player) => player.id === playerId);
+    const player = this.#players.find((player) => player.id === playerId);
     if (!player) {
       console.error('Player not found!');
       return;
@@ -77,7 +97,7 @@ export class Room {
   }
 
   addPlayer(playerId: string, playerProfile: PlayerProfile) {
-    const slot = this.availableSlots.pop();
+    const slot = this.#availableSlots.pop();
     if (slot === undefined) {
       console.error('No available slots in the room!');
       return null;
@@ -95,24 +115,33 @@ export class Room {
       colorIdx,
       seqNumber: 0,
       kills: 0,
-      health: 100,
+      health: MAX_PLAYER_HEALTH,
       ...playerProfile,
     };
 
-    this.players.push(player);
+    this.#players.push(player);
     return player;
   }
 
   removePlayer(playerId: string) {
-    this.players = this.players.filter((player) => {
+    this.#players = this.#players.filter((player) => {
       if (player.id === playerId && player.slot !== undefined) {
-        this.availableSlots.push(player.slot);
+        this.#availableSlots.push(player.slot);
         return false;
       }
       return true;
     });
 
-    return this.players.length;
+    return this.#players.length;
+  }
+
+  addBullet(playerId: string, x: number, y: number, colorIdx: number) {
+    this.#bullets.set(this.#bulletCount++, {
+      x,
+      y,
+      colorIdx,
+      playerId,
+    });
   }
 
   #spawnNovaWave() {
@@ -120,13 +149,12 @@ export class Room {
     const newNovas: Nova[] = [];
 
     for (let i = 0; i < waveSize; i++) {
-      const nova = this.novaPool.acquire();
+      const nova = this.#novaPool.acquire();
       if (!nova) continue;
 
       nova.x = getRandomIntVal(10, GAME_WIDTH - 10);
       nova.y = getRandomIntVal(-100, -10);
       nova.colorIdx = getRandomIntVal(0, COLORS.length - 1);
-
       newNovas.push(nova);
     }
 
@@ -134,34 +162,34 @@ export class Room {
 
     // Insert sorted novas directly to skip sorting before each sweep (collision check) given that novas are spawned as a group at intervals
     for (const nova of newNovas) {
-      this.novas.set(this.novaCounter++, nova);
+      this.#novas.set(this.#novaCount++, nova);
     }
   }
 
   #updateNovas() {
-    for (const [id, nova] of this.novas) {
-      nova.y += 1;
+    for (const [id, nova] of this.#novas) {
+      nova.y += Room.#NOVA_SPEED;
       if (nova.y >= GAME_HEIGHT) {
-        this.novaPool.release(nova);
-        this.novas.delete(id);
+        this.#novaPool.release(nova);
+        this.#novas.delete(id);
       }
     }
   }
 
   #updateBullets() {
-    for (const [id, bullet] of this.bullets) {
-      bullet.y -= 5;
+    for (const [id, bullet] of this.#bullets) {
+      bullet.y -= Room.#BULLET_SPEED;
       if (bullet.y <= 0) {
-        this.bullets.delete(id);
+        this.#bullets.delete(id);
       }
     }
   }
 
   #checkCollisions() {
-    for (const [bulletId, bullet] of this.bullets) {
-      for (const [novaId, nova] of this.novas) {
+    for (const [bulletId, bullet] of this.#bullets) {
+      for (const [novaId, nova] of this.#novas) {
         // Subtract nova's radius to get its left edge as novas are sorted by center x-coord
-        if (nova.x - 32 > bullet.x) break;
+        if (nova.x - Room.#NOVA_RADIUS > bullet.x) break;
         if (bullet.colorIdx !== nova.colorIdx) continue;
 
         const dx = bullet.x - nova.x;
@@ -169,10 +197,10 @@ export class Room {
         // use squared distance to avoid costly Math.sqrt()
         const distance = dx * dx + dy * dy;
 
-        if (distance <= COLLISION_RADIUS_SQUARED) {
-          this.bullets.delete(bulletId);
-          this.novaPool.release(nova);
-          this.novas.delete(novaId);
+        if (distance <= Room.#COLLISION_RADIUS_SQUARED) {
+          this.#bullets.delete(bulletId);
+          this.#novaPool.release(nova);
+          this.#novas.delete(novaId);
           const player = this.getPlayer(bullet.playerId);
           if (player) {
             player.kills++;
@@ -183,13 +211,27 @@ export class Room {
     }
   }
 
-  isPlayerInNovaRange() {
-    for (const player of this.players) {
-      for (const [, nova] of this.novas) {
-        if (player.x < nova.x - 64) break;
-        if (player.x > nova.x + 64) continue;
+  updateGameState() {
+    if (this.#novas.size <= 0) {
+      this.#spawnNovaWave();
+      this.#novaWaveCount++;
+    }
 
-        if (player.y >= nova.y && player.y <= nova.y + 120) {
+    this.#updateNovas();
+    this.#updateBullets();
+    this.#checkCollisions();
+  }
+
+  #checkAnyPlayerInNovaRange() {
+    for (const player of this.#players) {
+      for (const [, nova] of this.#novas) {
+        if (player.x < nova.x - Room.#NOVA_WIDTH) break;
+        if (player.x > nova.x + Room.#NOVA_WIDTH) continue;
+
+        if (
+          player.y >= nova.y &&
+          player.y <= nova.y + Room.#NOVA_PROXIMITY_RANGE
+        ) {
           return true;
         }
       }
@@ -197,27 +239,56 @@ export class Room {
     return false;
   }
 
-  applyDamageToPlayers() {
-    this.players.forEach((player) => {
-      player.health -= 10;
+  #damageAllPlayers() {
+    this.#players.forEach((player) => {
+      player.health = Math.max(0, player.health - HEALTH_DAMAGE_AMOUNT);
     });
   }
 
-  isGameOver() {
-    if (this.players[0]?.health === 0 || this.novaWaveCounter === 10) {
-      return true;
-    }
-    return false;
+  attemptNovaAttack() {
+    if (Date.now() - this.#lastDamageTime < Room.#DAMAGE_COOLDOWN) return false;
+    if (!this.#checkAnyPlayerInNovaRange()) return false;
+
+    this.#damageAllPlayers();
+    this.#lastDamageTime = Date.now();
+    return true;
   }
 
-  updateGameState() {
-    if (this.novas.size <= 0) {
-      this.#spawnNovaWave();
-      this.novaWaveCounter++;
-    }
+  isGameOver() {
+    // no need to check for every player's health, all receive the same damage at the same time
+    return (
+      this.#players[0]?.health === 0 ||
+      this.#novaWaveCount === Room.#MAX_NOVA_WAVES
+    );
+  }
 
-    this.#updateNovas();
-    this.#updateBullets();
-    this.#checkCollisions();
+  getGameEntities() {
+    return {
+      players: this.#players,
+      bullets: this.#bullets,
+      novas: this.#novas,
+    };
+  }
+
+  getGameStats() {
+    const playerStats = this.#players.map(({ name, spriteKey, kills }) => ({
+      name,
+      spriteKey,
+      kills,
+    }));
+
+    const totalKills = this.#players.reduce((sum, { kills }) => sum + kills, 0);
+    const killPercentage = this.#novaCount
+      ? Math.floor((totalKills / this.#novaCount) * 100)
+      : 0;
+    const isVictory =
+      this.#novaWaveCount >= Room.#MAX_NOVA_WAVES &&
+      killPercentage >= Room.#VICTORY_KILL_THRESHOLD;
+
+    return {
+      playerStats,
+      killPercentage,
+      isVictory,
+    };
   }
 }

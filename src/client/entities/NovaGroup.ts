@@ -1,10 +1,12 @@
+import { NOVA_POOL_SIZE } from '../../shared/constants';
+
 export default class NovaGroup extends Phaser.Physics.Arcade.Group {
   constructor(scene: Phaser.Scene) {
     super(scene.physics.world, scene);
     this.createMultiple({
       classType: Nova,
       key: 'nova',
-      quantity: 30,
+      quantity: NOVA_POOL_SIZE,
       active: false,
       visible: false,
     });
@@ -27,7 +29,6 @@ class Nova extends Phaser.Physics.Arcade.Sprite {
 
   activate(x: number, y: number, color: number) {
     this.enableBody(true, x, y, true, true);
-    this.anims.play('spawn');
     this.color = color;
   }
 

@@ -13,7 +13,11 @@ import type {
   Player as PlayerType,
   ServerToClientEvents,
 } from '../../shared/types';
-import { COLORS, PLAYER_SPEED } from '../../shared/constants';
+import {
+  COLORS,
+  HEALTH_DAMAGE_AMOUNT,
+  PLAYER_SPEED,
+} from '../../shared/constants';
 
 type SceneInitData = {
   socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -28,11 +32,11 @@ export default class Game extends Phaser.Scene {
   #roomId?: string;
   #player?: Player;
   #otherPlayers: Map<string, Player> = new Map();
-  #inputs: Input[] = [];
   #seqNumber = 0;
-  #bullets: Map<number, Bullet> = new Map();
+  #inputs: Input[] = [];
   #novas: Map<number, Nova> = new Map();
   #novaGroup?: NovaGroup;
+  #bullets: Map<number, Bullet> = new Map();
 
   constructor() {
     super('Game');
@@ -51,7 +55,6 @@ export default class Game extends Phaser.Scene {
 
   create({ players }: SceneInitData) {
     this.add.image(0, 0, 'game-bg').setOrigin(0);
-
     this.#novaGroup = new NovaGroup(this);
 
     players.forEach((player) => {
@@ -63,28 +66,7 @@ export default class Game extends Phaser.Scene {
       }
     });
 
-    this.#socket?.on('game:state', (gameState: GameState) => {
-      gameState.players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
-        if (id === this.#socket?.id) {
-          this.#updatePlayer(x, y, colorIdx, seqNumber);
-        } else {
-          this.#updateOtherPlayer(id, x, y, colorIdx);
-        }
-      });
-
-      this.#updateBullets(gameState.bullets);
-      this.#updateNovas(gameState.novas);
-    });
-
-    this.#socket?.on('nova:attacked', () => {
-      this.cameras.main.shake(200, 0.01);
-      this.#player?.updateHealth(-10);
-      this.#otherPlayers.forEach((player) => player.updateHealth(-10));
-    });
-
-    this.#socket?.on('game:over', (gameResult: GameResult) => {
-      this.scene.start('ResultBoard', gameResult);
-    });
+    this.#registerSocketListeners();
   }
 
   override update(_time: any, _delta: number) {
@@ -92,23 +74,60 @@ export default class Game extends Phaser.Scene {
 
     this.#player.update();
     this.#otherPlayers.forEach((otherPlayer) => otherPlayer.update());
+    this.#handlePlayerInput();
+  }
 
-    const input = this.#player.getInput();
+  #registerSocketListeners() {
+    if (!this.#socket) return;
+
+    this.#socket.on('game:state', (gameState: GameState) => {
+      const { players, bullets, novas } = gameState;
+      players.forEach(({ id, x, y, colorIdx, seqNumber }) => {
+        if (id === this.#socket?.id) {
+          this.#updatePlayer(x, y, colorIdx, seqNumber);
+        } else {
+          this.#updateOtherPlayer(id, x, y, colorIdx);
+        }
+      });
+
+      this.#updateBullets(bullets);
+      this.#updateNovas(novas);
+    });
+
+    this.#socket.on('nova:attacked', () => {
+      this.cameras.main.shake(200, 0.01);
+      this.#player?.updateHealth(-HEALTH_DAMAGE_AMOUNT);
+      this.#otherPlayers.forEach((player) =>
+        player.updateHealth(-HEALTH_DAMAGE_AMOUNT)
+      );
+    });
+
+    this.#socket.on('game:over', (gameResult: GameResult) => {
+      this.scene.start('ResultBoard', gameResult);
+    });
+  }
+
+  #handlePlayerInput() {
+    const input = this.#player?.getInput();
+    if (!input) return;
 
     if (input.left) this.#processMovement('left', -PLAYER_SPEED, 0);
     if (input.right) this.#processMovement('right', PLAYER_SPEED, 0);
     if (input.up) this.#processMovement('up', 0, -PLAYER_SPEED);
     if (input.down) this.#processMovement('down', 0, PLAYER_SPEED);
-
     if (input.fire) this.#fire();
-
     if (input.color) this.#changeColor();
   }
 
-  #changeColor() {
+  #processMovement = (direction: Direction, dx: number, dy: number) => {
     if (!this.#roomId) return;
-    this.#socket?.emit('player:colorChange', this.#roomId);
-  }
+
+    this.#seqNumber++;
+    this.#inputs.push({ seqNumber: this.#seqNumber, dx, dy });
+    this.#player?.move(dx, dy);
+
+    this.#socket?.emit('player:move', this.#roomId, direction, this.#seqNumber);
+  };
 
   #fire() {
     if (!this.#player || !this.#roomId) return;
@@ -117,16 +136,10 @@ export default class Game extends Phaser.Scene {
     this.#socket?.emit('player:fire', this.#roomId, x, y - displayHeight * 0.5);
   }
 
-  #processMovement = (direction: Direction, dx: number, dy: number) => {
+  #changeColor() {
     if (!this.#roomId) return;
-
-    this.#seqNumber++;
-    this.#inputs.push({ seqNumber: this.#seqNumber, dx, dy });
-
-    this.#player?.move(dx, dy);
-
-    this.#socket?.emit('player:move', this.#roomId, direction, this.#seqNumber);
-  };
+    this.#socket?.emit('player:colorChange', this.#roomId);
+  }
 
   #updatePlayer(x: number, y: number, colorIdx: number, seqNumber: number) {
     if (!this.#player) return;
@@ -146,10 +159,10 @@ export default class Game extends Phaser.Scene {
 
   #updateOtherPlayer(id: string, x: number, y: number, colorIdx: number) {
     const otherPlayer = this.#otherPlayers.get(id);
-    if (otherPlayer) {
-      otherPlayer.setTargetPosition(x, y);
-      otherPlayer.updateHealthBarColor(colorIdx);
-    }
+    if (!otherPlayer) return;
+
+    otherPlayer.setTargetPosition(x, y);
+    otherPlayer.updateHealthBarColor(colorIdx);
   }
 
   #createBullet(bulletId: number, bulletData: BulletType) {
@@ -160,13 +173,12 @@ export default class Game extends Phaser.Scene {
         : this.#otherPlayers.get(playerId);
 
     const color = COLORS[colorIdx];
-
     if (!player || !color) return;
 
     const newBullet = player.fireBullet(x, y, color);
-    if (newBullet) {
-      this.#bullets.set(bulletId, newBullet);
-    }
+    if (!newBullet) return;
+
+    this.#bullets.set(bulletId, newBullet);
   }
 
   #updateBullets(bullets: [number, BulletType][]) {
@@ -180,6 +192,7 @@ export default class Game extends Phaser.Scene {
         bullet.y = Phaser.Math.Linear(bullet.y, serverBullet.y, 0.3);
       }
     }
+
     for (const [id, bullet] of this.#bullets) {
       if (!serverBullets.has(id)) {
         bullet.deactivate();
@@ -193,11 +206,10 @@ export default class Game extends Phaser.Scene {
 
     for (const [id, serverNova] of serverNovas) {
       const { x, y, colorIdx } = serverNova;
-      const nova = this.#novas.get(id);
-
       const color = COLORS[colorIdx];
       if (!color) return;
 
+      const nova = this.#novas.get(id);
       if (!nova) {
         const newNova = this.#novaGroup?.getFirstDead(false) as Nova | null;
         if (newNova) {

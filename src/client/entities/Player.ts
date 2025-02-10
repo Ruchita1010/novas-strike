@@ -1,6 +1,6 @@
 import BulletGroup from './BulletGroup';
 import type { Player as PlayerType } from '../../shared/types';
-import { COLORS } from '../../shared/constants';
+import { COLORS, MAX_PLAYER_HEALTH } from '../../shared/constants';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   id;
@@ -11,9 +11,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   #cursors;
   #keys;
   #lastFiredTime = 0;
-  readonly #coolDown = 250;
   #bulletGroup: BulletGroup;
-  #health = 100;
+  static readonly #COOLDOWN = 250;
+  #health = MAX_PLAYER_HEALTH;
   #healthBar;
 
   constructor(scene: Phaser.Scene, playerData: PlayerType) {
@@ -46,7 +46,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   #drawHealthBar() {
     this.#healthBar.clear();
     const color = COLORS[this.#colorIdx] || 0xffffff;
-    const healthHeight = (this.#health / 100) * 29;
+    const healthHeight = (this.#health / MAX_PLAYER_HEALTH) * 29;
     this.#healthBar.fillStyle(color, 0.6);
     this.#healthBar.fillRect(-3, 18 - healthHeight, 7, healthHeight);
   }
@@ -59,7 +59,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const currentTime = this.scene.time.now;
     const canFire =
       this.#cursors.space.isDown &&
-      currentTime - this.#lastFiredTime > this.#coolDown;
+      currentTime - this.#lastFiredTime > Player.#COOLDOWN;
 
     if (canFire) {
       this.#lastFiredTime = currentTime;
@@ -94,7 +94,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   updateHealth(amount: number) {
-    const newHealth = Phaser.Math.Clamp(this.#health + amount, 0, 100);
+    const newHealth = Phaser.Math.Clamp(
+      this.#health + amount,
+      0,
+      MAX_PLAYER_HEALTH
+    );
     if (newHealth === this.#health) return;
     this.#health = newHealth;
     this.#drawHealthBar();

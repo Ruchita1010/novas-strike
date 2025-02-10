@@ -1,4 +1,3 @@
-import { Scene } from 'phaser';
 import { io, Socket } from 'socket.io-client';
 import { formatTime } from '../utils';
 import type {
@@ -8,7 +7,7 @@ import type {
   ServerToClientEvents,
 } from '../../shared/types';
 
-export default class Lobby extends Scene {
+export default class Lobby extends Phaser.Scene {
   #socket?: Socket<ServerToClientEvents, ClientToServerEvents>;
   #playerProfile?: PlayerProfile;
   #playerContainers: Map<string, Phaser.GameObjects.Container> = new Map();

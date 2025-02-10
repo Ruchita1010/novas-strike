@@ -1,7 +1,7 @@
-import { GameObjects, Scene } from 'phaser';
+import type { GameObjects } from 'phaser';
 import { generateRandomName, getRandomIntVal } from '../utils';
 
-export default class MainMenu extends Scene {
+export default class MainMenu extends Phaser.Scene {
   #inputPanel: GameObjects.DOMElement | null = null;
   #selectedSpaceship: string = '';
 

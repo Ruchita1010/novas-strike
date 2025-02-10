@@ -1,10 +1,12 @@
+import { BULLET_POOL_SIZE } from '../../shared/constants';
+
 export default class BulletGroup extends Phaser.Physics.Arcade.Group {
   constructor(scene: Phaser.Scene) {
     super(scene.physics.world, scene);
     this.createMultiple({
       classType: Bullet,
       key: 'bullet',
-      quantity: 20,
+      quantity: BULLET_POOL_SIZE,
       active: false,
       visible: false,
     });

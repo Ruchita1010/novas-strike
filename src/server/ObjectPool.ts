@@ -10,7 +10,6 @@ export class ObjectPool<T> {
   acquire() {
     const obj = this.#pool.pop();
     if (!obj) {
-      console.error('Pool is exhausted!');
       return null;
     }
     return obj;

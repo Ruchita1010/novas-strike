@@ -5,3 +5,4 @@ export const PLAYER_SPEED = 3;
 export const MAX_PLAYER_HEALTH = 100;
 export const HEALTH_DAMAGE_AMOUNT = 10;
 export const NOVA_POOL_SIZE = 30;
+export const BULLET_POOL_SIZE = 14;

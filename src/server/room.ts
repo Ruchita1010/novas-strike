@@ -2,6 +2,7 @@ import { ObjectPool } from './objectPool.js';
 import { getRandomIntVal } from './utils.js';
 import type { Bullet, Nova, Player, PlayerProfile } from '../shared/types.js';
 import {
+  BULLET_POOL_SIZE,
   COLORS,
   GAME_HEIGHT,
   GAME_WIDTH,
@@ -29,6 +30,7 @@ export class Room {
   #novaPool: ObjectPool<Nova>;
   #novas: Map<number, Nova> = new Map();
   #bulletCount: number = 0;
+  #bulletPool?: ObjectPool<Bullet>;
   #bullets: Map<number, Bullet> = new Map();
   #available = true;
   #availableSlots: number[] = Array.from(
@@ -49,6 +51,12 @@ export class Room {
 
   closeLobby() {
     this.#available = false;
+    // don't wanna make pool of size === max players in room as a room won't always be full so waste of memory.
+    // and initiating the bulletPool here bc once lobby is closed, we can confirm the total players (assuming mostly players won't leave in between)
+    this.#bulletPool = new ObjectPool(
+      () => ({ x: 0, y: 0, colorIdx: 0, playerId: '' }),
+      BULLET_POOL_SIZE * this.#players.length
+    );
     if (this.#lobbyTimer) {
       clearTimeout(this.#lobbyTimer.id);
       this.#lobbyTimer = null;
@@ -136,12 +144,17 @@ export class Room {
   }
 
   addBullet(playerId: string, x: number, y: number, colorIdx: number) {
-    this.#bullets.set(this.#bulletCount++, {
-      x,
-      y,
-      colorIdx,
-      playerId,
-    });
+    const bullet = this.#bulletPool?.acquire();
+    if (!bullet) {
+      console.error('Bullet Pool is exhausted!');
+      return;
+    }
+
+    bullet.x = x;
+    bullet.y = y;
+    bullet.colorIdx = colorIdx;
+    bullet.playerId = playerId;
+    this.#bullets.set(this.#bulletCount++, bullet);
   }
 
   #spawnNovaWave() {
@@ -150,7 +163,10 @@ export class Room {
 
     for (let i = 0; i < waveSize; i++) {
       const nova = this.#novaPool.acquire();
-      if (!nova) continue;
+      if (!nova) {
+        console.warn('Nova Pool is exhausted!');
+        continue;
+      }
 
       nova.x = getRandomIntVal(10, GAME_WIDTH - 10);
       nova.y = getRandomIntVal(-100, -10);
@@ -180,6 +196,7 @@ export class Room {
     for (const [id, bullet] of this.#bullets) {
       bullet.y -= Room.#BULLET_SPEED;
       if (bullet.y <= 0) {
+        this.#bulletPool?.release(bullet);
         this.#bullets.delete(id);
       }
     }
@@ -198,9 +215,11 @@ export class Room {
         const distance = dx * dx + dy * dy;
 
         if (distance <= Room.#COLLISION_RADIUS_SQUARED) {
+          this.#bulletPool?.release(bullet);
           this.#bullets.delete(bulletId);
           this.#novaPool.release(nova);
           this.#novas.delete(novaId);
+
           const player = this.getPlayer(bullet.playerId);
           if (player) {
             player.kills++;

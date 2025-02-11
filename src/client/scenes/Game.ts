@@ -1,6 +1,7 @@
 import type { Socket } from 'socket.io-client';
 import Player from '../entities/Player';
 import NovaGroup from '../entities/NovaGroup';
+import ExplosionGroup from '../entities/ExplosionGroup';
 import type { Nova } from '../entities/NovaGroup';
 import type { Bullet } from '../entities/BulletGroup';
 import type {
@@ -37,6 +38,7 @@ export default class Game extends Phaser.Scene {
   #novas: Map<number, Nova> = new Map();
   #novaGroup?: NovaGroup;
   #bullets: Map<number, Bullet> = new Map();
+  #explosionGroup?: ExplosionGroup;
 
   constructor() {
     super('Game');
@@ -51,11 +53,16 @@ export default class Game extends Phaser.Scene {
     this.load.image('game-bg', 'assets/images/game-bg.png');
     this.load.image('bullet', 'assets/images/bullet.png');
     this.load.image('nova', 'assets/images/nova.png');
+    this.load.spritesheet('explosion', 'assets/images/explosion.png', {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
   }
 
   create({ players }: SceneInitData) {
     this.add.image(0, 0, 'game-bg').setOrigin(0);
-    this.#novaGroup = new NovaGroup(this);
+
+    this.#registerSocketListeners();
 
     players.forEach((player) => {
       const playerObj = new Player(this, player);
@@ -66,7 +73,15 @@ export default class Game extends Phaser.Scene {
       }
     });
 
-    this.#registerSocketListeners();
+    this.#novaGroup = new NovaGroup(this);
+    this.#explosionGroup = new ExplosionGroup(this);
+    this.anims.create({
+      key: 'explode',
+      frames: this.anims.generateFrameNumbers('explosion', {
+        start: 0,
+        end: 4,
+      }),
+    });
   }
 
   override update(_time: any, _delta: number) {
@@ -223,6 +238,7 @@ export default class Game extends Phaser.Scene {
 
     for (const [id, nova] of this.#novas) {
       if (!serverNovas.has(id)) {
+        this.#explosionGroup?.explode(nova.x, nova.y);
         nova.deactivate();
         this.#novas.delete(id);
       }

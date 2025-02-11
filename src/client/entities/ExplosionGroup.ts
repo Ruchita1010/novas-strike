@@ -1,10 +1,12 @@
+import { NOVA_POOL_SIZE } from '../../shared/constants';
+
 export default class ExplosionGroup extends Phaser.Physics.Arcade.Group {
   constructor(scene: Phaser.Scene) {
     super(scene.physics.world, scene);
     this.createMultiple({
       classType: Phaser.Physics.Arcade.Sprite,
       key: 'explosion',
-      quantity: 30,
+      quantity: NOVA_POOL_SIZE,
       active: false,
       visible: false,
     });

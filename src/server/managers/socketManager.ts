@@ -3,6 +3,7 @@ import type { RoomsManager } from './roomsManager.js';
 import type {
   ClientToServerEvents,
   Direction,
+  Player,
   PlayerProfile,
   ServerToClientEvents,
 } from '../../shared/types.js';
@@ -140,6 +141,15 @@ export class SocketManager {
       }
 
       socket.to(roomId).emit('player:left', socket.id);
+    });
+  }
+
+  disconnectPlayers(players: Player[]) {
+    players.forEach(({ id }) => {
+      const socket = this.#io.sockets.sockets.get(id);
+      if (!socket) return;
+
+      socket.disconnect(true);
     });
   }
 

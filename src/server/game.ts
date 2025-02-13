@@ -24,6 +24,7 @@ export class Game {
 
         if (room.isGameOver()) {
           this.#socketManager.broadcastGameOver(room.id);
+          this.#socketManager.disconnectPlayers(room.getAllPlayers());
           this.#roomsManager.deleteRoom(room.id);
           return;
         }

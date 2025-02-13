@@ -21,6 +21,10 @@ export default class ResultBoard extends Phaser.Scene {
     this.#isVictory = isVictory;
   }
 
+  preload() {
+    this.load.html('restartBtn', 'assets/dom/restart-btn.html');
+  }
+
   create() {
     const centerX = this.scale.width / 2;
 
@@ -47,6 +51,7 @@ export default class ResultBoard extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.#displayPlayerStats(centerX, 300);
+    this.#addRestartBtn(centerX);
   }
 
   #displayPlayerStats(centerX: number, y: number) {
@@ -73,7 +78,9 @@ export default class ResultBoard extends Phaser.Scene {
           fontFamily: 'PixelifySans',
         })
         .setOrigin(0.5);
+
       this.add.sprite(x, y + 100, spriteKey).setScale(1.5);
+
       this.add
         .text(x, y + 160, name, {
           color: '#cd894a',
@@ -81,6 +88,17 @@ export default class ResultBoard extends Phaser.Scene {
           fontFamily: 'PixelifySans',
         })
         .setOrigin(0.5);
+    });
+  }
+
+  #addRestartBtn(centerX: number) {
+    const restartBtn = this.add.dom(centerX, 600).createFromCache('restartBtn');
+
+    restartBtn.addListener('click');
+    restartBtn.on('click', () => {
+      // There's no option to handle game restart directly in phaser.
+      // For now, going with page refresh instead of destroying and creating new game object. Check more on this later.
+      location.reload();
     });
   }
 }

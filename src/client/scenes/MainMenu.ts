@@ -1,5 +1,5 @@
 import type { GameObjects } from 'phaser';
-import { generateRandomName, getRandomIntVal } from '../utils';
+import { generateRandomName, getRandomIntVal, switchScene } from '../utils';
 
 export default class MainMenu extends Phaser.Scene {
   #inputPanel: GameObjects.DOMElement | null = null;
@@ -68,6 +68,6 @@ export default class MainMenu extends Phaser.Scene {
 
     const spriteKey = this.#selectedSpaceship || `ship${getRandomIntVal(1, 4)}`;
 
-    this.scene.start('Lobby', { name, spriteKey });
+    switchScene(this, 'Lobby', { name, spriteKey });
   }
 }

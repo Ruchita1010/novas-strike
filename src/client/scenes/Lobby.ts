@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { formatTime } from '../utils';
+import { formatTime, switchScene } from '../utils';
 import type {
   ClientToServerEvents,
   Player,
@@ -60,7 +60,11 @@ export default class Lobby extends Phaser.Scene {
     });
 
     this.#socket.on('game:start', (roomId: string, players: Player[]) => {
-      this.scene.start('Game', { socket: this.#socket, roomId, players });
+      switchScene(this, 'Game', {
+        socket: this.#socket,
+        roomId,
+        players,
+      });
     });
   }
 

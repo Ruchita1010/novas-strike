@@ -4,6 +4,7 @@ import NovaGroup from '../entities/NovaGroup';
 import ExplosionGroup from '../entities/ExplosionGroup';
 import type { Nova } from '../entities/NovaGroup';
 import type { Bullet } from '../entities/BulletGroup';
+import { switchScene } from '../utils';
 import type {
   ClientToServerEvents,
   Direction,
@@ -143,7 +144,7 @@ export default class Game extends Phaser.Scene {
 
     this.#socket.on('game:over', (gameResult: GameResult) => {
       this.#bgMusic?.stop();
-      this.scene.start('ResultBoard', gameResult);
+      switchScene(this, 'ResultBoard', gameResult);
     });
   }
 

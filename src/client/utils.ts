@@ -30,3 +30,17 @@ export function formatTime(seconds: number) {
     .toString()
     .padStart(2, '0')}`;
 }
+
+export function switchScene<T extends object>(
+  scene: Phaser.Scene,
+  key: string,
+  data?: T
+) {
+  scene.cameras.main.fadeOut(500, 13, 13, 13);
+  scene.cameras.main.once(
+    Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
+    () => {
+      scene.scene.start(key, data);
+    }
+  );
+}

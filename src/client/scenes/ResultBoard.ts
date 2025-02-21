@@ -26,6 +26,8 @@ export default class ResultBoard extends Phaser.Scene {
   }
 
   create() {
+    this.add.image(0, 0, 'decorBg').setOrigin(0);
+
     const centerX = this.scale.width / 2;
 
     this.add

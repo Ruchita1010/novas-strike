@@ -16,9 +16,12 @@ export default class MainMenu extends Phaser.Scene {
       'truetype'
     );
     this.load.html('inputPanel', 'assets/dom/input-panel.html');
+    this.load.image('decorBg', 'assets/images/decor-bg.png');
   }
 
   create() {
+    this.add.image(0, 0, 'decorBg').setOrigin(0);
+
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
 

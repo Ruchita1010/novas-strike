@@ -39,6 +39,8 @@ export default class Game extends Phaser.Scene {
   #novaGroup?: NovaGroup;
   #bullets: Map<number, Bullet> = new Map();
   #explosionGroup?: ExplosionGroup;
+  #explosionSound?: Phaser.Sound.BaseSound;
+  #bgMusic?: Phaser.Sound.BaseSound;
 
   constructor() {
     super('Game');
@@ -57,6 +59,11 @@ export default class Game extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64,
     });
+    this.load.audio('boom', ['assets/audio/boom.ogg', 'assets/audio/boom.wav']);
+    this.load.audio('bgMusic', [
+      'assets/audio/bg-music.ogg',
+      'assets/audio/bg-music.wav',
+    ]);
   }
 
   create({ players }: SceneInitData) {
@@ -82,6 +89,23 @@ export default class Game extends Phaser.Scene {
         end: 4,
       }),
     });
+
+    this.#explosionSound = this.sound.add('boom', {
+      volume: 0.5,
+    });
+
+    this.#bgMusic = this.sound.add('bgMusic', {
+      volume: 1,
+      loop: true,
+    });
+
+    if (!this.sound.locked) {
+      this.#bgMusic?.play();
+    } else {
+      this.sound.once(Phaser.Sound.Events.UNLOCKED, () => {
+        this.#bgMusic?.play();
+      });
+    }
   }
 
   override update(_time: any, _delta: number) {
@@ -118,6 +142,7 @@ export default class Game extends Phaser.Scene {
     });
 
     this.#socket.on('game:over', (gameResult: GameResult) => {
+      this.#bgMusic?.stop();
       this.scene.start('ResultBoard', gameResult);
     });
   }
@@ -239,6 +264,7 @@ export default class Game extends Phaser.Scene {
     for (const [id, nova] of this.#novas) {
       if (!serverNovas.has(id)) {
         this.#explosionGroup?.explode(nova.x, nova.y);
+        this.#explosionSound?.play();
         nova.deactivate();
         this.#novas.delete(id);
       }

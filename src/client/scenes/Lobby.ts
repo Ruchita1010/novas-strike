@@ -66,6 +66,13 @@ export default class Lobby extends Phaser.Scene {
         players,
       });
     });
+
+    this.events.once('shutdown', () => {
+      this.#socket?.removeAllListeners();
+      this.#playerContainers.clear();
+      this.#timerEvent?.remove();
+      this.#timerEvent = undefined;
+    });
   }
 
   #addTimer(endTime: number) {

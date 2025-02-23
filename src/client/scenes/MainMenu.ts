@@ -2,7 +2,7 @@ import type { GameObjects } from 'phaser';
 import { generateRandomName, getRandomIntVal, switchScene } from '../utils';
 
 export default class MainMenu extends Phaser.Scene {
-  #inputPanel: GameObjects.DOMElement | null = null;
+  #inputPanel?: GameObjects.DOMElement;
   #selectedSpaceship: string = '';
 
   constructor() {
@@ -46,6 +46,12 @@ export default class MainMenu extends Phaser.Scene {
       } else if (target.id === 'start-btn') {
         this.#initGame();
       }
+    });
+
+    this.events.once('shutdown', () => {
+      this.#inputPanel?.removeListener('click');
+      this.#inputPanel = undefined;
+      this.#selectedSpaceship = '';
     });
   }
 

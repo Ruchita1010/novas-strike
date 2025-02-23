@@ -107,6 +107,13 @@ export default class Game extends Phaser.Scene {
         this.#bgMusic?.play();
       });
     }
+
+    this.events.once('shutdown', () => {
+      this.#socket?.removeAllListeners();
+      this.#otherPlayers.clear();
+      this.#novas.clear();
+      this.#bullets.clear();
+    });
   }
 
   override update(_time: any, _delta: number) {

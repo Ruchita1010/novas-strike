@@ -98,9 +98,15 @@ export default class ResultBoard extends Phaser.Scene {
 
     restartBtn.addListener('click');
     restartBtn.on('click', () => {
-      // There's no option to handle game restart directly in phaser.
-      // For now, going with page refresh instead of destroying and creating new game object. Check more on this later.
       location.reload();
     });
   }
 }
+
+// Why opting for page reload for a restart?
+// TL;DR: Too many trade-offs with other options, and I just want to ship fast.
+
+// Phaser has no built-in way to fully reset a game. A page reload ensures a clean hard reset with no memory leaks.
+// Other options:
+// 1. Destroy and recreate the game instance
+// 2. Cleanup every scene on shutdown, then restart by switching to MainMenu scene but yeah risk of memory leaks if cleanup isn’t done properly. Also, assets(textures, scenes, audio, anims) are global and persist across scenes. If not properly destroyed, they keep doubling up on restart. A Boot scene could load assets once, but that increases initial load time. (Phaser only cleans up its own game objects when a scene shuts down, but any custom data I store or events , is my responsibility to clean up)

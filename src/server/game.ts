@@ -18,9 +18,10 @@ export class Game {
   }
 
   startLoops() {
-    const rooms = this.#roomsManager.getAllRooms();
     // -60fps (for updating physics and game state)
     this.#gameUpdateLoop = setInterval(() => {
+      const rooms = this.#roomsManager.getAllRooms();
+
       rooms.forEach((room) => {
         if (room.isAvailable()) return;
 
@@ -41,6 +42,8 @@ export class Game {
 
     // -20fps (for broadcasting game state to all clients)
     this.#stateBroadcastLoop = setInterval(() => {
+      const rooms = this.#roomsManager.getAllRooms();
+
       rooms.forEach((room) => {
         if (room.isAvailable()) return;
 

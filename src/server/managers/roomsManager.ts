@@ -35,7 +35,7 @@ export class RoomsManager {
   }
 
   getAllRooms() {
-    return this.#rooms;
+    return Array.from(this.#rooms.values());
   }
 
   deleteRoom(id: string) {

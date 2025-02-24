@@ -9,6 +9,8 @@ import type {
 export class Game {
   #roomsManager: RoomsManager;
   #socketManager: SocketManager;
+  #gameUpdateLoop: NodeJS.Timeout | null = null;
+  #stateBroadcastLoop: NodeJS.Timeout | null = null;
 
   constructor(io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.#roomsManager = new RoomsManager();
@@ -17,8 +19,8 @@ export class Game {
 
   startLoops() {
     const rooms = this.#roomsManager.getAllRooms();
-    // -60fps
-    setInterval(() => {
+    // -60fps (for updating physics and game state)
+    this.#gameUpdateLoop = setInterval(() => {
       rooms.forEach((room) => {
         if (room.isAvailable()) return;
 
@@ -37,13 +39,25 @@ export class Game {
       });
     }, 1000 / 60);
 
-    // -20fps
-    setInterval(() => {
+    // -20fps (for broadcasting game state to all clients)
+    this.#stateBroadcastLoop = setInterval(() => {
       rooms.forEach((room) => {
         if (room.isAvailable()) return;
 
         this.#socketManager.broadcastGameState(room.id);
       });
     }, 1000 / 20);
+  }
+
+  stopLoops() {
+    if (this.#gameUpdateLoop) {
+      clearInterval(this.#gameUpdateLoop);
+      this.#gameUpdateLoop = null;
+    }
+
+    if (this.#stateBroadcastLoop) {
+      clearInterval(this.#stateBroadcastLoop);
+      this.#stateBroadcastLoop = null;
+    }
   }
 }

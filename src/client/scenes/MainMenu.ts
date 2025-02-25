@@ -33,6 +33,17 @@ export default class MainMenu extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.add.text(
+      0,
+      630,
+      'Move - WASD/Arrow Keys\nShoot - Spacebar\nChange Color - Key C',
+      {
+        color: '#fff8bc',
+        fontSize: 24,
+        fontFamily: 'PixelifySans',
+      }
+    );
+
     this.#inputPanel = this.add
       .dom(centerX, centerY)
       .createFromCache('inputPanel');

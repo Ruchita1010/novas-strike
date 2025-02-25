@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node dist/server/index.js",
-    "clean": "rm -rf dist/**/*.d.ts",
+    "clean": "rm -rf dist/**/*.d.ts dist/**/*.tsbuildinfo",
     "build:client": "tsc -b src/client && vite build",
     "build:server": "tsc -b src/server && npm run clean",
     "client:watch": "vite build --watch",

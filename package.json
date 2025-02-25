@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node dist/server/index.js",
+    "clean": "rm -rf dist/**/*.d.ts",
     "build:client": "tsc -b src/client && vite build",
-    "build:server": "tsc -b src/server",
-    "build": "npm run build:client && npm run build:server",
+    "build:server": "tsc -b src/server && npm run clean",
     "client:watch": "vite build --watch",
     "server:tsc": "tsc -b --watch src/server",
     "server:node": "node --watch dist/server/index.js",
